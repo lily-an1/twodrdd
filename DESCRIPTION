@@ -1,0 +1,11 @@
+Package: twodrdd
+Type: Package
+Title: Methods to analyze two-dimensional regression discontinuity designs
+Version: 0.1.0
+Author: Lily An, Luke Miratrix
+Maintainer: Lily An (lily_an@g.harvard.edu)
+Description: Using nonparametric response surface methods as well as methods using LLR for two-dimensional RDDs
+    Use four spaces when indenting paragraphs within the Description.
+License: What license is it under?
+Encoding: UTF-8
+LazyData: true
