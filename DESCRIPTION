@@ -2,10 +2,32 @@ Package: twodrdd
 Type: Package
 Title: Methods to analyze two-dimensional regression discontinuity designs
 Version: 0.1.0
-Author: Lily An, Luke Miratrix
-Maintainer: Lily An (lily_an@g.harvard.edu)
-Description: Using nonparametric response surface methods as well as methods using LLR for two-dimensional RDDs
-    Use four spaces when indenting paragraphs within the Description.
-License: What license is it under?
+Author: Lily An
+Maintainer: Lily An <lily_an@g.harvard.edu>
+Imports: 
+    dplyr,
+    purrr,
+    rddapp,
+    laGP,
+    MASS,
+    mvtnorm,
+    here,
+    glue,
+    stats,
+    car,
+    tidyselect,
+    tidyr,
+    stringr,
+    magrittr,
+    tibble
+Description: This package allows the user to use nonparametric response surface 
+    methods as well as methods using local linear regression to analyze two-
+    dimensional regression discontinuity designs.
+License: GPL-2
 Encoding: UTF-8
 LazyData: true
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
