@@ -3,8 +3,9 @@
 \name{drop_low_weight_sentinels}
 \alias{drop_low_weight_sentinels}
 \title{Given a list of sentinels, drop those with very low weight (using
-the weight column).  Will drop smallest sentinels up to the drop
-proportion, but never exceed that threshold.}
+the weight column).  Will drop smallest sentinels in order up to
+the drop proportion, but never exceed that threshold in total mass
+dropped.}
 \usage{
 drop_low_weight_sentinels(GP_res, drop_prop = 0.01)
 }
@@ -15,6 +16,7 @@ drop_low_weight_sentinels(GP_res, drop_prop = 0.01)
 }
 \description{
 Given a list of sentinels, drop those with very low weight (using
-the weight column).  Will drop smallest sentinels up to the drop
-proportion, but never exceed that threshold.
+the weight column).  Will drop smallest sentinels in order up to
+the drop proportion, but never exceed that threshold in total mass
+dropped.
 }

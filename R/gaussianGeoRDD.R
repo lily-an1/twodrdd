@@ -216,10 +216,14 @@ calc_tx_curve <- function(sentinels, data, method, startnum, endnum) {
 #'
 #' @param sampdat data to analyze
 #' @param n_sentinel number of sentinels per side
-#' @param method What type of GP to call - newGP, aGP, or laGP (newGP generally, others are approximations)
+#' @param method What type of GP to call - newGP, aGP, or laGP (Use
+#'   'new' generally, although it is more time intensive, others are
+#'   approximations)
 #' @param startnum Parameter to gaussian process estimator
 #' @param endnum Parameter to gaussian process estimator
 #' @param fixed_sent fixed sentinel locations between 0-4 on each RV
+#'
+#' @export
 gaussianp <- function(sampdat, n_sentinel = 20,
                       method = c( "new", "aGP", "laGP" ),
                       startnum, endnum, fixed_sent = FALSE) {
@@ -270,11 +274,14 @@ gaussianp <- function(sampdat, n_sentinel = 20,
 
 
 #' Given a list of sentinels, drop those with very low weight (using
-#' the weight column).  Will drop smallest sentinels up to the drop
-#' proportion, but never exceed that threshold.
+#' the weight column).  Will drop smallest sentinels in order up to
+#' the drop proportion, but never exceed that threshold in total mass
+#' dropped.
 #'
 #' @param GP_res Gaussian process regression result to be passed in
 #' @param drop_prop proportion of weight that
+#'
+#' @export
 drop_low_weight_sentinels <- function( GP_res, drop_prop = 0.01 ) {
     weight <- NULL
 
@@ -447,6 +454,8 @@ calc_AFE_SE <- function( GP_res, weight ) {
 #'
 #' @param GP_res Gaussian process regression result to be passed in
 #' @param calc_SE Will be TRUE for GPR and FALSE for loess
+#'
+#' @export
 calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
 
     estimate <- weight <- weight_p <- AFE_wt <- AFE_prec <- AFE <- SE <- parameter <- n_sent <- sampsize <- SE_wt <- SE_prec <- NULL

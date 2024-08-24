@@ -18,7 +18,9 @@ gaussianp(
 
 \item{n_sentinel}{number of sentinels per side}
 
-\item{method}{What type of GP to call - newGP, aGP, or laGP (newGP generally, others are approximations)}
+\item{method}{What type of GP to call - newGP, aGP, or laGP (Use
+'new' generally, although it is more time intensive, others are
+approximations)}
 
 \item{startnum}{Parameter to gaussian process estimator}
 

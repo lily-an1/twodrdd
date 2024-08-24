@@ -2,7 +2,6 @@
 # Function to estimate treatment curve along a boundary with loess lines
 #
 
-source( here::here( "R/gaussianGeoRDD.R" ) )
 
 
 #' Given a point (x,y) take all data within radius of the point, and then weight
@@ -79,6 +78,8 @@ loess_calc_point <- function(x, y, radius, data) {
 #' @param radius radius size around each point
 #' @param min_sample min # of data points within each radius
 #' @param n_sentinel number of sentinels per side
+#'
+#' @export
 loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20) {
 
     Yhat1 <- Yhat0 <- se1 <- se0 <- rating1 <- rating2 <- NULL

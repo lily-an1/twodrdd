@@ -1,9 +1,6 @@
 #Lily An
 #Compares GPR to binding score, loess, and frontier
 
-# The gaussian GeoRDD estimator function
-source( here::here( "R/gaussianGeoRDD.R" ) )
-source( here::here(  "R/loessGeoRDD.R" ) )
 
 
 #' code to analyze single dataset of n observations using our list of
@@ -21,6 +18,8 @@ source( here::here(  "R/loessGeoRDD.R" ) )
 #' @param include_GP_RES for residualized GPR
 #' @param include_loess for loess
 #' @param endnum Parameter to gaussian process estimator.
+#'
+#' @export
 analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
                       startnum=50, endnum=100,
                       include_OLS = TRUE,
