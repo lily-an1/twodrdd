@@ -2,8 +2,6 @@
 
 test_that("generating simulation data", {
 
-  library(tidyverse)
-
   dat = gen_dat_sim(4, 0.8, 0.75, 0.2, 444343, n = 5000, s = 1)
   dat2 = gen_dat_sim(4, 0.8, 0.75, 0.2, 444343, n = 5000, s = 1)
   expect_equal( dat$parameters, dat2$parameters )
