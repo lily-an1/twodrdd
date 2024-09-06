@@ -3,11 +3,12 @@
 \name{analysis}
 \alias{analysis}
 \title{code to analyze single dataset of n observations using our list of
-estimators.}
+estimators. The treated area is the top right quadrant.}
 \usage{
 analysis(
   dat,
-  radius = 10,
+  cut1 = 0,
+  cut2 = 0,
   min_sample = 8,
   n_sentinel = 20,
   startnum = 50,
@@ -23,7 +24,9 @@ analysis(
 \arguments{
 \item{dat}{data to be analyzed}
 
-\item{radius}{Parameter to loess estimator.}
+\item{cut1}{Cutoff value for running variable 1. centered at 0 in sim DGP}
+
+\item{cut2}{Cutoff value for running variable 2. centered at 0 in sim DGP}
 
 \item{min_sample}{Parameter to loess estimator.}
 
@@ -47,5 +50,5 @@ analysis(
 }
 \description{
 code to analyze single dataset of n observations using our list of
-estimators.
+estimators. The treated area is the top right quadrant.
 }

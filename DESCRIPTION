@@ -1,9 +1,21 @@
 Package: twodrdd
 Type: Package
-Title: Methods to analyze two-dimensional regression discontinuity designs
+Title: Package to fit 2D RDD Models
 Version: 0.1.0
-Author: Lily An
-Maintainer: Lily An <lily_an@g.harvard.edu>
+Authors@R: 
+  c(person(given = "Lily",
+           family = "An",
+           role = c("aut", "cre"),
+           email = "lily_an@g.harvard.edu",
+           comment = c(ORCID = "0000-0002-1931-1533")),
+    person(given = "Luke",
+           family = "Miratrix",
+           role = "aut",
+           comment = c(ORCID = "0000-0002-0078-1906")),
+    person(given = "Zach",
+           family = "Branson",
+           role = "aut",
+           comment = c(ORCID = "0000-0001-9496-9979")))
 Imports: 
     dplyr,
     purrr,
@@ -22,7 +34,9 @@ Imports:
     tibble
 Description: This package allows the user to use nonparametric response surface 
     methods as well as methods using local linear regression to analyze two-
-    dimensional regression discontinuity designs.
+    dimensional regression discontinuity designs. These methods use the rddapp 
+    and laGP packages extensively; code is also provided to generate data sets
+    that was originally shared by Kristin Porter.
 License: GPL-2
 Encoding: UTF-8
 LazyData: true

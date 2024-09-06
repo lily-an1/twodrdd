@@ -33,7 +33,8 @@ loess_calc_one_point <- function(x, y, radius, data, min_sample = 8) {
         return(data.frame(
             Yhat = NA,
             n = nrow(dd),
-            eff = 0  # No estimate, no weight.
+            eff = 0, # No estimate, no weight.
+            se = NA
         ))
     }
 
@@ -104,7 +105,9 @@ loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20) {
     Ys = dplyr::inner_join(Y0s,
                     Y1s,
                     by = c("rating1", "rating2"),
-                    suffix = c("0", "1")) %>%
+                    suffix = c("0", "1"))
+
+    Ys <- Ys %>%
         dplyr::mutate(estimate = Yhat1 - Yhat0,
                se = sqrt(se1^2 + se0^2), #NA, #se = (sqrt(1/sum(1/(se)^2)))
                se_hat = NA, #I don't think we get the covariance matrix from predict.stats::lm

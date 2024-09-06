@@ -58,8 +58,7 @@ all params)}
 
 \item{sigma.noise}{The sd of error term in surface response model}
 
-\item{data.type}{= "full","observed",or "none" (no data returned -
-just parameter values)}
+\item{data.type}{= "full" or "observed" (ID, rating1, rating2, T, Y)}
 
 \item{param.eff.T}{= parameters for treatment impact as function of
 ratings for full model with terms r1,r2,r1*r2,r1^2,r2^2}
@@ -69,6 +68,6 @@ ratings for full model with terms r1,r2,r1*r2,r1^2,r2^2}
 descriptive info such as parameter values for observed data.
 }
 \description{
-Generate fake data following general structure of Porter et al, as
-adjusted by An at al (2024)
+Generate fake data following general structure of Porter et al. (2017), as
+adjusted by An et al. (2024)
 }

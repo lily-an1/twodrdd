@@ -1,13 +1,9 @@
-#Lily An
-#Compares GPR to binding score, loess, and frontier
-
-
-
 #' code to analyze single dataset of n observations using our list of
-#' estimators.
+#' estimators. The treated area is the top right quadrant.
 #'
-#' @param radius Parameter to loess estimator.
 #' @param min_sample Parameter to loess estimator.
+#' @param cut1 Cutoff value for running variable 1. centered at 0 in sim DGP
+#' @param cut2 Cutoff value for running variable 2. centered at 0 in sim DGP
 #' @param startnum Parameter to gaussian process estimator
 #' @param dat data to be analyzed
 #' @param n_sentinel number of sentinels per side
@@ -20,7 +16,8 @@
 #' @param endnum Parameter to gaussian process estimator.
 #'
 #' @export
-analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
+analysis <- function( dat, cut1=0, cut2=0,
+                      min_sample=8, n_sentinel = 20,
                       startnum=50, endnum=100,
                       include_OLS = TRUE,
                       include_BINDING = FALSE,
@@ -31,11 +28,9 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
 
     Y <- NULL
 
-    # Assumption: ratings have been centered at cutpoints (so we can use
-    # cut1 = cut2 = 0).  Our DGP centered the ratings automatically, so
-    # this is ok.
-    cut1 = 0
-    cut2 = 0
+    #Center running variables around their cutpoints
+    dat$rating1 <- dat$rating1 - cut1
+    dat$rating2 <- dat$rating2 - cut2
 
     out_ols = tibble::tibble()
     out_bs = tibble::tibble()
@@ -62,7 +57,7 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
                              t.design=c("l","l"))
         #Could add: se.type="vcovHC", default is "HC1"
 
-        tau.ate <- runfun_bs[["center"]][["tau_MRD"]][["est"]][4]
+        tau.ate <- -1*runfun_bs[["center"]][["tau_MRD"]][["est"]][4]
         se.ate <- runfun_bs[["center"]][["tau_MRD"]][["se"]][4]
         n.ate <- runfun_bs[["center"]][["tau_MRD"]][["obs"]][4]
         #4 is the Optimal bandwidth specification
@@ -99,7 +94,7 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
                                     cutpoint=cut1,
                                     t.design="l")
 
-            tau.ate <- runfun_frontier1[["est"]][4]
+            tau.ate <- -1*runfun_frontier1[["est"]][4]
             se.ate <- runfun_frontier1[["se"]][4]
             n.ate <- runfun_frontier1[["obs"]][4]
             #4 is the Optimal bandwidth specification
@@ -118,7 +113,7 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
                                     cutpoint=cut2,
                                     t.design="l")
 
-            tau.ate <- runfun_frontier2[["est"]][4]
+            tau.ate <- -1*runfun_frontier2[["est"]][4]
             se.ate <- runfun_frontier2[["se"]][4]
             n.ate <- runfun_frontier2[["obs"]][4]
             #4 is the Optimal bandwidth specification
@@ -139,7 +134,7 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
                                  t.design=c("l","l"), boot=50)
 
         ##Non-parametric using optimal bandwidth case (bw selected by CV)
-        tau.ate <- runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,3]
+        tau.ate <- -1*runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,3]
         se.ate <- runfun_frontier[["front"]][["tau_MRD"]][["se"]][2,3]
         #se.ate <- NA
         n.ate <- runfun_frontier[["front"]][["tau_MRD"]][["obs"]][["bw"]][1]
@@ -147,13 +142,13 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
 
         ##Try Complete Model for RV1
         ##Non-parametric using optimal bandwidth case (bw selected by CV)
-        tau.ate1 <- runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,1]
+        tau.ate1 <- -1*runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,1]
         se.ate1 <- runfun_frontier[["front"]][["tau_MRD"]][["se"]][2,1]
         n.ate1 <- runfun_frontier[["front"]][["tau_MRD"]][["obs"]][["bw"]][1]
 
         ##Try Complete Model for RV2
         ##Non-parametric using optimal bandwidth case (bw selected by CV)
-        tau.ate2 <- runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,2]
+        tau.ate2 <- -1*runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,2]
         se.ate2 <- runfun_frontier[["front"]][["tau_MRD"]][["se"]][2,2]
         n.ate2 <- runfun_frontier[["front"]][["tau_MRD"]][["obs"]][["bw"]][1]
 
@@ -206,7 +201,7 @@ analysis <- function( dat, radius=10, min_sample=8, n_sentinel = 20,
     out_loess = tibble::tibble()
     if ( include_loess ) {
         out_loess <- loess2DRDD(sampdat = dat,
-                                radius = radius,
+                                radius = mean(sd(dat$rating2), sd(dat$rating1))/2,
                                 n_sentinel = n_sentinel )
         out_loess = calculate_average_impact( out_loess, calc_SE=FALSE )
         out_loess$n = nrow(dat)

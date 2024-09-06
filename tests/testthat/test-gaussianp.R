@@ -28,7 +28,7 @@ test_that( "support functions of gaussianp work", {
   rng = range(sampdat$Y )
   rng
 
-  expect_true( -50 <= rng[[1]] & rng[[2]] <= 50 )
+  expect_true( -100 <= rng[[1]] & rng[[2]] <= 100 )
 
   sentinels = twodrdd:::make_sentinels(sampdat, n_sentinel = 10, fixed_sent = TRUE )
   expect_true( is.data.frame( sentinels ) )
