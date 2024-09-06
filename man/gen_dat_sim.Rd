@@ -18,6 +18,14 @@ gen_dat_sim(
 \arguments{
 \item{sim}{ID for the simulation type, following Porter et al.}
 
+\item{rho}{correlation between running variables}
+
+\item{cut1}{percentile at which running variable 1's cutoff is}
+
+\item{cut2}{percentile at which running variable 2's cutoff is}
+
+\item{seed}{set seed}
+
 \item{n}{Number of samples per set}
 
 \item{s}{Number of datasets}

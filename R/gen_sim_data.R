@@ -22,12 +22,12 @@
 #' @param cut2.value = value for cutting rating 2 (if no quantile
 #'   passed).
 #' @param param.Y0 = parameters for fn relating ratings and Y0
-#' @param param.eff.T = parameters for treatment impact as function of
-#'   ratings for full model with terms r1,r2,r1*r2,r1^2,r2^2
 #' @param sigma.noise The sd of error term in surface response model
 #' @param sigma.E The sd of random error in effects (assumed same for
 #'   all params)
 #' @param	data.type = "full" or "observed" (ID, rating1, rating2, T, Y)
+#' @param tx.func treatment function for true impacts
+#' @param seed set seed
 #'
 #' @return: simdat = either full or observed dataset and some
 #' descriptive info such as parameter values for observed data.
@@ -74,7 +74,7 @@ gen.2RRDD <- function(n,
   # in sim, using cutoff location on the N(0,1) distribution
   if (is.null(cut1.quantile) == FALSE) {
     stopifnot( cut1.quantile > 0 && cut1.quantile < 1 )
-    cut1 <- qnorm( cut1.quantile, mean = mu1, sd = sigma.r1 )
+    cut1 <- stats::qnorm( cut1.quantile, mean = mu1, sd = sigma.r1 )
   } else {
     stopifnot( cut2.quantile > 0 && cut2.quantile < 1 )
     stopifnot( !is.null(cut1.value ) )
@@ -82,7 +82,7 @@ gen.2RRDD <- function(n,
   }
   if (is.null(cut2.quantile) == FALSE) {
     stopifnot( cut2.quantile > 0 && cut2.quantile < 1 )
-    cut2 <- qnorm( cut2.quantile, mean = mu2, sd = sigma.r2 )
+    cut2 <- stats::qnorm( cut2.quantile, mean = mu2, sd = sigma.r2 )
   } else {
     stopifnot( cut1.quantile > 0 && cut1.quantile < 1 )
     stopifnot( !is.null( cut2.value ) )
@@ -127,10 +127,10 @@ gen.2RRDD <- function(n,
   #
   # This does a matrix multiply of the design matrix dm (a 6 x n
   # matrix) and the parameter vector param.Y0 (1 x 6)
-  Y0 <- apply(sweep(dm, MARGIN = 2, param.Y0, '*'), 1, sum) + rnorm(n, 0, sigma.noise)
+  Y0 <- apply(sweep(dm, MARGIN = 2, param.Y0, '*'), 1, sum) + stats::rnorm(n, 0, sigma.noise)
 
   # generate impacts
-  eff.err <- rnorm(n * s, 0, sigma.E)
+  eff.err <- stats::rnorm(n * s, 0, sigma.E)
   E.true.T <- tx.func(r1, r2) + eff.err
 
   # generate potential outcomes under treatment
@@ -149,7 +149,7 @@ gen.2RRDD <- function(n,
       rating2 = r2,
       r1pass,
       r2pass,
-      cut1,
+      cut1, #now 0 bc it's been centered
       cut2,
       T,
       Y0,
@@ -170,14 +170,14 @@ gen.2RRDD <- function(n,
 
   # parameter values
   # sigma
-  obs.sigma.r1 <- sd(r1.obs)
-  obs.sigma.r2 <- sd(r2.obs)
-  obs.sigma.Y <- sd(Y.obs)
+  obs.sigma.r1 <- stats::sd(r1.obs)
+  obs.sigma.r2 <- stats::sd(r2.obs)
+  obs.sigma.Y <- stats::sd(Y.obs)
 
   # rho
-  obs.rho.r1r2 <- cor(r1.obs, r2.obs)
-  obs.rho.r1Y0 <- cor(r1.obs, Y0)
-  obs.rho.r2Y0 <- cor(r2.obs, Y0)
+  obs.rho.r1r2 <- stats::cor(r1.obs, r2.obs)
+  obs.rho.r1Y0 <- stats::cor(r1.obs, Y0)
+  obs.rho.r2Y0 <- stats::cor(r2.obs, Y0)
 
   # treatment effects
 
@@ -221,6 +221,13 @@ gen.2RRDD <- function(n,
 #' Calculate true effects assuming the running variable distribution
 #' is bivariate normal with passed mean and covariance.
 #' I.e., (r1, r2) ~ MVN( rMean, rSigma )
+#'
+#' @param rating1 running variable 1
+#' @param rating2 running variable 2
+#' @param E.true.T tx.func(r1, r2) + eff.err
+#' @param rMean c( mu1 - cut1.old, mu2 - cut2.old) the old cuts are original cuts
+#' @param rSigma matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2))
+#' @param tx.func treatment function
 calc_true_effects <- function( rating1, rating2,
                                E.true.T,
                                rMean, rSigma,
@@ -240,13 +247,13 @@ calc_true_effects <- function( rating1, rating2,
                              mean = rMean,
                              sigma = rSigma)
   }
-  num.r1 <- integrate(num.integrand.r1, lower = 0, upper = Inf)
+  num.r1 <- stats::integrate(num.integrand.r1, lower = 0, upper = Inf)
   num.integrand.r2 <- function(xx) {
     tx.func(0, xx) * dmvnorm(cbind(0, xx),
                              mean = rMean,
                              sigma = rSigma)
   }
-  num.r2 <- integrate(num.integrand.r2, lower = 0, upper = Inf)
+  num.r2 <- stats::integrate(num.integrand.r2, lower = 0, upper = Inf)
 
   # integrate conditional density
   den.integrand.r1 <- function(xx) {
@@ -254,13 +261,13 @@ calc_true_effects <- function( rating1, rating2,
             mean = rMean,
             sigma = rSigma)
   }
-  den.r1 <- integrate(den.integrand.r1, lower = 0, upper = Inf)
+  den.r1 <- stats::integrate(den.integrand.r1, lower = 0, upper = Inf)
   den.integrand.r2 <- function(xx) {
     dmvnorm(cbind(0, xx),
             mean = rMean,
             sigma = rSigma)
   }
-  den.r2 <- integrate(den.integrand.r2, lower = 0, upper = Inf)
+  den.r2 <- stats::integrate(den.integrand.r2, lower = 0, upper = Inf)
 
   # mean effect along r1 boundary
   tau.r1 <- num.r2$value / den.r2$value
@@ -284,6 +291,11 @@ calc_true_effects <- function( rating1, rating2,
 #' Given the true mean and covariance, calculate weights of a passed
 #' sequence of (r1,r2) pairs.
 #'
+#' @param rating1 running variable 1
+#' @param rating2 running variable 2
+#' @param rMean c( mu1 - cut1.old, mu2 - cut2.old) the old cuts are original cuts
+#' @param rSigma matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2))
+#'
 #' @return List of weights, one for each sentinel.  Sums to 1.
 calc_true_sentinel_weights <- function( rating1, rating2,
                                         rMean, rSigma ) {
@@ -305,6 +317,10 @@ calc_true_sentinel_weights <- function( rating1, rating2,
 #' @param sim ID for the simulation type, following Porter et al.
 #' @param n Number of samples per set
 #' @param s Number of datasets
+#' @param rho correlation between running variables
+#' @param cut1 percentile at which running variable 1's cutoff is
+#' @param cut2 percentile at which running variable 2's cutoff is
+#' @param seed set seed
 #'
 #' @export
 gen_dat_sim <- function(sim = 1,

@@ -53,6 +53,8 @@ passed).}
 
 \item{param.Y0}{= parameters for fn relating ratings and Y0}
 
+\item{tx.func}{treatment function for true impacts}
+
 \item{sigma.E}{The sd of random error in effects (assumed same for
 all params)}
 
@@ -60,8 +62,7 @@ all params)}
 
 \item{data.type}{= "full" or "observed" (ID, rating1, rating2, T, Y)}
 
-\item{param.eff.T}{= parameters for treatment impact as function of
-ratings for full model with terms r1,r2,r1*r2,r1^2,r2^2}
+\item{seed}{set seed}
 }
 \value{
 : simdat = either full or observed dataset and some

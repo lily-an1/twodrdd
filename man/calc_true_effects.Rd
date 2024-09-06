@@ -8,6 +8,19 @@ I.e., (r1, r2) ~ MVN( rMean, rSigma )}
 \usage{
 calc_true_effects(rating1, rating2, E.true.T, rMean, rSigma, tx.func)
 }
+\arguments{
+\item{rating1}{running variable 1}
+
+\item{rating2}{running variable 2}
+
+\item{E.true.T}{tx.func(r1, r2) + eff.err}
+
+\item{rMean}{c( mu1 - cut1.old, mu2 - cut2.old) the old cuts are original cuts}
+
+\item{rSigma}{matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2))}
+
+\item{tx.func}{treatment function}
+}
 \description{
 Calculate true effects assuming the running variable distribution
 is bivariate normal with passed mean and covariance.
