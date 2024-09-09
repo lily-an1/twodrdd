@@ -2,21 +2,19 @@
 % Please edit documentation in R/loessGeoRDD.R
 \name{loess_calc_point}
 \alias{loess_calc_point}
-\title{loess_calc_point
-Run loess_calc_one_point across data}
+\title{Run loess_calc_one_point across data}
 \usage{
 loess_calc_point(x, y, radius, data)
 }
 \arguments{
-\item{x}{one side of sentinels}
+\item{x}{One side of sentinels.}
 
-\item{y}{other side of sentinels}
+\item{y}{Other side of sentinels.}
 
-\item{radius}{radius size around each point}
+\item{radius}{Radius size around each point.}
 
-\item{data}{data to be analyzed}
+\item{data}{Data to be analyzed.}
 }
 \description{
-loess_calc_point
 Run loess_calc_one_point across data
 }

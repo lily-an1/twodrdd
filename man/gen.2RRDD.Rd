@@ -2,7 +2,7 @@
 % Please edit documentation in R/gen_sim_data.R
 \name{gen.2RRDD}
 \alias{gen.2RRDD}
-\title{function gen.2RRDD}
+\title{Generate fake data}
 \usage{
 gen.2RRDD(
   n,
@@ -27,45 +27,46 @@ gen.2RRDD(
 )
 }
 \arguments{
-\item{n}{= sample size}
+\item{n}{= Sample size.}
 
-\item{s}{= number of samples}
+\item{s}{= Number of samples.}
 
-\item{mu1}{= mean of rating 1}
+\item{mu1}{= Mean of running variable 1.}
 
-\item{mu2}{= mean of rating 2}
+\item{mu2}{= Mean of running variable 2.}
 
-\item{sigma.r1}{= sd of true rating 1}
+\item{sigma.r1}{= Standard deviation of true running variable 1.}
 
-\item{sigma.r2}{= sd of true rating 2}
+\item{sigma.r2}{= Standard deviation of true running variable 2.}
 
-\item{rho.r1r2}{= correlation between true ratings}
+\item{rho.r1r2}{= Correlation between true running variables.}
 
-\item{cut1.quantile}{= quantile for cutting rating 1}
+\item{cut1.quantile}{= Quantile for cutting running variable 1.}
 
-\item{cut2.quantile}{= quantile for cutting rating 2}
+\item{cut2.quantile}{= Quantile for cutting running variable 2.}
 
-\item{cut1.value}{= value for cutting rating 1 (if no quantile
-passed)}
-
-\item{cut2.value}{= value for cutting rating 2 (if no quantile
+\item{cut1.value}{= Value for cutting running variable 1 (if no quantile
 passed).}
 
-\item{param.Y0}{= parameters for fn relating ratings and Y0}
+\item{cut2.value}{= Value for cutting running variable 2 (if no quantile
+passed).}
 
-\item{tx.func}{treatment function for true impacts}
+\item{param.Y0}{= Parameters for the function relating running variables and Y0.}
 
-\item{sigma.E}{The sd of random error in effects (assumed same for
-all params)}
+\item{tx.func}{The treatment function for true impacts,}
 
-\item{sigma.noise}{The sd of error term in surface response model}
+\item{sigma.E}{The standard deviation of random error in effects (assumed same for
+all params).}
 
-\item{data.type}{= "full" or "observed" (ID, rating1, rating2, T, Y)}
+\item{sigma.noise}{The standard deviation of the error term in surface response model.}
 
-\item{seed}{set seed}
+\item{data.type}{= Either "full" or "observed". Observed contains ID,
+running variable1, running variable2, T, Y).}
+
+\item{seed}{Set seed parameter.}
 }
 \value{
-: simdat = either full or observed dataset and some
+: simdat = Either full or observed dataset and some
 descriptive info such as parameter values for observed data.
 }
 \description{

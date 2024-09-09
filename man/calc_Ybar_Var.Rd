@@ -2,17 +2,16 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{calc_Ybar_Var}
 \alias{calc_Ybar_Var}
-\title{Calculate the standard error for a weighted average of the
-sentinels given in the Ys object.}
+\title{Calculate SEs}
 \usage{
 calc_Ybar_Var(GP_res, tx = 0, weight)
 }
 \arguments{
-\item{GP_res}{Gaussian process regression result to be passed in}
+\item{GP_res}{Gaussian process regression result to be passed in.}
 
-\item{tx}{treated side = 1 control = 0}
+\item{tx}{Treated side = 1, control = 0.}
 
-\item{weight}{vector of weights.}
+\item{weight}{Vector of weights.}
 }
 \value{
 Standard error of the average outcome of the sentinels,

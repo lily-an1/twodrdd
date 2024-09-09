@@ -2,17 +2,16 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{get_cov_matrix_side}
 \alias{get_cov_matrix_side}
-\title{Pull the covariance matrix of the sentinals out of the GP result
-object (treatment or control side)}
+\title{Retrieve sentinels' covariance matrix}
 \usage{
 get_cov_matrix_side(GP_res, tx = NULL)
 }
 \arguments{
-\item{GP_res}{Gaussian process regression result to be passed in}
+\item{GP_res}{Gaussian process regression result to be passed in.}
 
-\item{tx}{treated = 1, control = 0, needed to identify Sigmas}
+\item{tx}{Needed to identify Sigmas: treated = 1, control = 0.}
 }
 \description{
-Pull the covariance matrix of the sentinals out of the GP result
+Pull the covariance matrix of the sentinels out of the GP result
 object (treatment or control side)
 }

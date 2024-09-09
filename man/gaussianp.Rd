@@ -2,7 +2,7 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{gaussianp}
 \alias{gaussianp}
-\title{Estimate impacts along boundary given dataset}
+\title{Use Gaussian process regression}
 \usage{
 gaussianp(
   sampdat,
@@ -14,26 +14,26 @@ gaussianp(
 )
 }
 \arguments{
-\item{sampdat}{data to analyze}
+\item{sampdat}{Data to analyze.}
 
-\item{n_sentinel}{number of sentinels per side}
+\item{n_sentinel}{The number of sentinels per side.}
 
 \item{method}{What type of GP to call - newGP, aGP, or laGP (Use
 'new' generally, although it is more time intensive, others are
-approximations)}
+approximations).}
 
-\item{startnum}{Parameter to gaussian process estimator}
+\item{startnum}{Parameter to Gaussian process estimator.}
 
-\item{endnum}{Parameter to gaussian process estimator}
+\item{endnum}{Parameter to Gaussian process estimator.}
 
-\item{fixed_sent}{fixed sentinel locations between 0-4 on each RV}
+\item{fixed_sent}{TRUE if user wants to use fixed sentinel locations between 0-4 on each running variable.}
 }
 \description{
-This method uses a gaussian process regression on the treated and
+Given a two-dimensional dataset with two cutpoints, estimate treatment effects
+along the boundary.
+This method uses a Gaussian process regression on the treated and
 control units to estimate a treatment impact along the boundary
 defined by having a 0 score in at least one of the two ratings.
-}
-\details{
 This function will label units as treated or not, based on the
 (rating1, rating2) values.
 }

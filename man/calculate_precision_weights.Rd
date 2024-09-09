@@ -2,15 +2,14 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{calculate_precision_weights}
 \alias{calculate_precision_weights}
-\title{This implements equation 13 from Maxime paper to get sentinal
-weights that correspond to the inverse variance weighting.}
+\title{Precision weights}
 \usage{
 calculate_precision_weights(GP_res)
 }
 \arguments{
-\item{GP_res}{Gaussian process regression result to be passed in}
+\item{GP_res}{Gaussian process regression result to be passed in.}
 }
 \description{
-This implements equation 13 from Maxime paper to get sentinal
+This implements equation 13 from Rischard et al. (2021) to get sentinel
 weights that correspond to the inverse variance weighting.
 }

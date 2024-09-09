@@ -2,25 +2,20 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{calculate_average_impact}
 \alias{calculate_average_impact}
-\title{Average the sentinels to get an overall estimated impact along the
-boundary.
-Produce two estimates: one uses the sentinel weights.  The other
-uses precision weighting by weighting by the inverse of the standard
-error (if the variance-covariance of the sentinal estimates is
-provided).}
+\title{Calculate BATE}
 \usage{
 calculate_average_impact(GP_res, calc_SE = TRUE)
 }
 \arguments{
-\item{GP_res}{Gaussian process regression result to be passed in}
+\item{GP_res}{Gaussian process regression result to be passed in.}
 
-\item{calc_SE}{Will be TRUE for GPR and FALSE for loess}
+\item{calc_SE}{Will be TRUE for Gaussian process regression and FALSE for loess.}
 }
 \description{
 Average the sentinels to get an overall estimated impact along the
 boundary.
 Produce two estimates: one uses the sentinel weights.  The other
 uses precision weighting by weighting by the inverse of the standard
-error (if the variance-covariance of the sentinal estimates is
+error (if the variance-covariance of the sentinel estimates is
 provided).
 }

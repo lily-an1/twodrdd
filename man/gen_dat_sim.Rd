@@ -2,8 +2,7 @@
 % Please edit documentation in R/gen_sim_data.R
 \name{gen_dat_sim}
 \alias{gen_dat_sim}
-\title{This function generates multiple datasets at once, given the
-simulation type, cut scores, sample size.}
+\title{Create simulation data}
 \usage{
 gen_dat_sim(
   sim = 1,
@@ -16,20 +15,23 @@ gen_dat_sim(
 )
 }
 \arguments{
-\item{sim}{ID for the simulation type, following Porter et al.}
+\item{sim}{ID for the simulation type, following Porter et al. (2017).}
 
-\item{rho}{correlation between running variables}
+\item{rho}{Correlation between running variables.}
 
-\item{cut1}{percentile at which running variable 1's cutoff is}
+\item{cut1}{Percentile at which running variable 1's cutoff is.}
 
-\item{cut2}{percentile at which running variable 2's cutoff is}
+\item{cut2}{Percentile at which running variable 2's cutoff is.}
 
-\item{seed}{set seed}
+\item{seed}{Set seed parameter.}
 
-\item{n}{Number of samples per set}
+\item{n}{Number of samples per set.}
 
-\item{s}{Number of datasets}
+\item{s}{Number of datasets.}
 }
 \description{
+This function generates multiple datasets at once, given the
+simulation type, cut scores, sample size.
 Passed parameters allow for changing the data generating process.
+Modified from Kristin Porter's code shared Feb 2022 for Porter et al. (2017).
 }

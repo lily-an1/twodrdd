@@ -2,19 +2,19 @@
 % Please edit documentation in R/gen_sim_data.R
 \name{calc_true_sentinel_weights}
 \alias{calc_true_sentinel_weights}
-\title{Given the true mean and covariance, calculate weights of a passed
-sequence of (r1,r2) pairs.}
+\title{Calculate weights at sentinels}
 \usage{
 calc_true_sentinel_weights(rating1, rating2, rMean, rSigma)
 }
 \arguments{
-\item{rating1}{running variable 1}
+\item{rating1}{Running variable 1.}
 
-\item{rating2}{running variable 2}
+\item{rating2}{Running variable 2.}
 
-\item{rMean}{c( mu1 - cut1.old, mu2 - cut2.old) the old cuts are original cuts}
+\item{rMean}{Defined as c( mu1 - cut1.old, mu2 - cut2.old), where the old cuts
+are the original running variable cutoffs.}
 
-\item{rSigma}{matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2))}
+\item{rSigma}{Defined as matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2)).}
 }
 \value{
 List of weights, one for each sentinel.  Sums to 1.

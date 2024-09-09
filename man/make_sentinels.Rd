@@ -2,19 +2,19 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{make_sentinels}
 \alias{make_sentinels}
-\title{Generate a grid of sentinels along the treatment boundary (assumed
-to be where one of ratings is 0)}
+\title{Make the sentinels.}
 \usage{
 make_sentinels(dat, n_sentinel, fixed_sent = FALSE)
 }
 \arguments{
-\item{dat}{data to be analyzed}
+\item{dat}{Data to be analyzed.}
 
-\item{n_sentinel}{number of sentinels per side}
+\item{n_sentinel}{The number of sentinels per side.}
 
-\item{fixed_sent}{fixed sentinel locations between 0-4 on each RV}
+\item{fixed_sent}{TRUE if user wants fixed sentinel locations between 0-4
+(approx the width of test sentinel bands in the simulation) on each running variable.}
 }
 \description{
 Generate a grid of sentinels along the treatment boundary (assumed
-to be where one of ratings is 0)
+to be where one of ratings is 0) and number the sentinels.
 }

@@ -2,30 +2,27 @@
 % Please edit documentation in R/loessGeoRDD.R
 \name{loess_calc_one_point}
 \alias{loess_calc_one_point}
-\title{Given a point (x,y) take all data within radius of the point, and then weight
-the data in the radius using the triweight function of (1-d^3)^3 (rescaling
-d, the distance, to have a max of 1 first).  Note the weight is 1 when d=0,
-and 0 when d=1.}
+\title{Use loess at one point.}
 \usage{
 loess_calc_one_point(x, y, radius, data, min_sample = 8)
 }
 \arguments{
-\item{x}{one side of sentinels}
+\item{x}{One side of sentinels.}
 
-\item{y}{other side of sentinels}
+\item{y}{Other side of sentinels.}
 
-\item{radius}{radius size around each point}
+\item{radius}{Radius size around each point.}
 
-\item{data}{data to be analyzed}
+\item{data}{Data to be analyzed.}
 
-\item{min_sample}{min # of data points within each radius}
+\item{min_sample}{The minimum number of data points within each radius.}
 }
 \description{
-Once weights are computed, fit a quad model with a linear interaction (other
-choices are possible here) to the weighted data.  Then predict for our
-candidate (x,y) point!
-}
-\details{
-Don't fit a model if we have fewer than 6 data points (need sufficient
+Given a point (x,y) take all data within radius of the point, and then weight
+the data in the radius using the triweight function of (1-d^3)^3 (rescaling
+d, the distance, to have a max of 1 first).  Note the weight is 1 when d=0,
+and 0 when d=1. Once weights are computed, fit a quad model with a linear interaction (other
+choices are possible here) to the weighted data. Then predict for our
+candidate (x,y) point. Don't fit a model if we have fewer than 6 data points (need sufficient
 degrees of freedom).
 }

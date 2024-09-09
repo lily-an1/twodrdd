@@ -7,19 +7,17 @@
 calc_tx_curve(sentinels, data, method, startnum, endnum)
 }
 \arguments{
-\item{sentinels}{df of sentinels}
+\item{sentinels}{Data frame of the sentinels.}
 
-\item{data}{data to be analyzed, passed}
+\item{data}{Data to be analyzed, passed.}
 
-\item{method}{What type of GP to call, passed}
+\item{method}{What type of GP to call, passed.}
 
-\item{startnum}{Parameter to gaussian process estimator}
+\item{startnum}{Parameter to Gaussian process estimator.}
 
-\item{endnum}{Parameter to gaussian process estimator}
+\item{endnum}{Parameter to Gaussian process estimator.}
 }
 \description{
 This function fits the GP twice, once for each dataset.
-}
-\details{
-Middle function - divides data into Treated & Control before laGP prediction
+Middle function - divides data into Treated & Control before Gaussian process prediction.
 }

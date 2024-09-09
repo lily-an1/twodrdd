@@ -2,15 +2,16 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{calc_AFE_SE}
 \alias{calc_AFE_SE}
-\title{Calculate the Standard Error for the Average Frontier Effect}
+\title{Calculate the BATE SE}
 \usage{
 calc_AFE_SE(GP_res, weight)
 }
 \arguments{
-\item{GP_res}{Gaussian process regression result to be passed in}
+\item{GP_res}{Gaussian process regression result to be passed in.}
 
-\item{weight}{vector of weights}
+\item{weight}{Vector of weights.}
 }
 \description{
-Weight the sentinels on the frontier as given by 'weight'.
+Use calc_Ybar_Var function on both the treated and control sides.
+Weight the sentinels on the boundary as given by 'weight'.
 }

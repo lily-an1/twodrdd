@@ -2,19 +2,18 @@
 % Please edit documentation in R/loessGeoRDD.R
 \name{loess2DRDD}
 \alias{loess2DRDD}
-\title{Given data and a list of sentinels, calculate predicted Y0 and Y1, and then
-take the difference as the estimated treatment effect at each sentinel}
+\title{Generate loess estimates}
 \usage{
 loess2DRDD(sampdat, radius, min_sample, n_sentinel = 20)
 }
 \arguments{
-\item{sampdat}{data to be analyzed}
+\item{sampdat}{Data to be analyzed.}
 
-\item{radius}{radius size around each point}
+\item{radius}{Radius size around each point (we use half a SD).}
 
-\item{min_sample}{min # of data points within each radius}
+\item{min_sample}{Minimum number of data points within each radius.}
 
-\item{n_sentinel}{number of sentinels per side}
+\item{n_sentinel}{Number of sentinels per side of the boundary.}
 }
 \description{
 Given data and a list of sentinels, calculate predicted Y0 and Y1, and then

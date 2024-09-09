@@ -2,8 +2,7 @@
 % Please edit documentation in R/analysis_fn.R
 \name{analysis}
 \alias{analysis}
-\title{code to analyze single dataset of n observations using our list of
-estimators. The treated area is the top right quadrant.}
+\title{Two-dimensional RDD methods}
 \usage{
 analysis(
   dat,
@@ -22,33 +21,35 @@ analysis(
 )
 }
 \arguments{
-\item{dat}{data to be analyzed}
+\item{dat}{Data to be analyzed.}
 
-\item{cut1}{Cutoff value for running variable 1. centered at 0 in sim DGP}
+\item{cut1}{Cutoff value for running variable 1. Centered at 0 in the simulation's data generating processes.}
 
-\item{cut2}{Cutoff value for running variable 2. centered at 0 in sim DGP}
+\item{cut2}{Cutoff value for running variable 2. centered at 0 in the simulation's data generating processes.}
 
 \item{min_sample}{Parameter to loess estimator.}
 
-\item{n_sentinel}{number of sentinels per side}
+\item{n_sentinel}{The number of sentinels per side.}
 
-\item{startnum}{Parameter to gaussian process estimator}
+\item{startnum}{Parameter to the gaussian process estimator.}
 
-\item{endnum}{Parameter to gaussian process estimator.}
+\item{endnum}{Parameter to the gaussian process estimator.}
 
-\item{include_OLS}{for OLS regression}
+\item{include_OLS}{TRUE to include OLS regression.}
 
-\item{include_BINDING}{for binding score}
+\item{include_BINDING}{TRUE to include binding score.}
 
-\item{include_FRONTIER}{for pooled frontier}
+\item{include_FRONTIER}{TRUE to include pooled frontier.
+The results parameter is labeled the AFE. AFE1 and AFE2 are the effects specific to
+each running variable boundary.}
 
-\item{include_GP}{for GPR}
+\item{include_GP}{TRUE to include Gaussian process regression.}
 
-\item{include_GP_RES}{for residualized GPR}
+\item{include_GP_RES}{TRUE to include residualized Gaussian process regression.}
 
-\item{include_loess}{for loess}
+\item{include_loess}{TRUE to include loess.}
 }
 \description{
-code to analyze single dataset of n observations using our list of
+Code to analyze single dataset of n observations using our list of
 estimators. The treated area is the top right quadrant.
 }

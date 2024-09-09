@@ -2,8 +2,7 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{calc_one_point_GP}
 \alias{calc_one_point_GP}
-\title{Fit gaussian process and use it to predict for each (x,y) pair
-passed.}
+\title{Gaussian process predictions}
 \usage{
 calc_one_point_GP(
   sentinels,
@@ -15,20 +14,19 @@ calc_one_point_GP(
 )
 }
 \arguments{
-\item{sentinels}{Dataframe holding rating1,rating2, which are the}
+\item{sentinels}{Data frame holding the sentinels.}
 
-\item{data}{data to be analyzed, passed}
+\item{data}{The data to be analyzed, passed.}
 
-\item{method}{What type of GP to call, passed}
+\item{method}{What type of GP to call, passed.}
 
-\item{startnum}{Parameter to gaussian process estimator}
+\item{startnum}{Parameter to Gaussian process estimator.}
 
-\item{endnum}{Parameter to gaussian process estimator}
+\item{endnum}{Parameter to Gaussian process estimator.}
 
-\item{prefix}{used in Sigma column names
-x,y locations of the sentinels.}
+\item{prefix}{Used in Sigma column names.}
 }
 \description{
-Fit gaussian process and use it to predict for each (x,y) pair
-passed.
+Innermost function - runs the laGP model to fit gaussian process
+and uses it to predict for each (x,y) pair of sentinels.
 }

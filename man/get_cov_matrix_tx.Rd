@@ -2,15 +2,13 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{get_cov_matrix_tx}
 \alias{get_cov_matrix_tx}
-\title{See maxime's paper for this formula (Equation 6)
-This is Sigma_b|Y}
+\title{Add covariance matrices}
 \usage{
 get_cov_matrix_tx(GP_res)
 }
 \arguments{
-\item{GP_res}{Gaussian process regression result to be passed in}
+\item{GP_res}{Gaussian process regression result to be passed in.}
 }
 \description{
-See maxime's paper for this formula (Equation 6)
-This is Sigma_b|Y
+This is Sigma_b|Y (Equation 6 in Rischard et al. (2021).
 }

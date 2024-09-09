@@ -2,18 +2,19 @@
 % Please edit documentation in R/gaussianGeoRDD.R
 \name{calc_weights}
 \alias{calc_weights}
-\title{Calculate weights of the sentinels.}
+\title{Sentinel weights}
 \usage{
 calc_weights(x, y, data)
 }
 \arguments{
-\item{x}{location of sentinels, sentinels$rating1}
+\item{x}{The location of sentinels, sentinels$rating1.}
 
-\item{y}{location of sentinels, sentinels$rating2}
+\item{y}{The location of sentinels, sentinels$rating2.}
 
-\item{data}{data to be analyzed}
+\item{data}{The data to be analyzed.}
 }
 \description{
+Calculate weights of the sentinels.
 Here we fit a multivariate normal and then do weights as density
 given the assumed multivariate normal.
 }
