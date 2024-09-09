@@ -1,16 +1,14 @@
-#
-# Given a 2D dataset with two cutpoints, estimate treatment effects
-# along the boundary.
 
 
-#Innermost function - runs the laGP model and prediction on sentinels
-
-#' Generate a grid of sentinels along the treatment boundary (assumed
-#' to be where one of ratings is 0)
+#' Make the sentinels.
 #'
-#' @param dat data to be analyzed
-#' @param n_sentinel number of sentinels per side
-#' @param fixed_sent fixed sentinel locations between 0-4 on each RV
+#' Generate a grid of sentinels along the treatment boundary (assumed
+#' to be where one of ratings is 0) and number the sentinels.
+#'
+#' @param dat Data to be analyzed.
+#' @param n_sentinel The number of sentinels per side.
+#' @param fixed_sent TRUE if user wants fixed sentinel locations between 0-4
+#'  (approx the width of test sentinel bands in the simulation) on each running variable.
 make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE) {
 
     rating2 <- NULL
@@ -20,14 +18,11 @@ make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE) {
     sent2 = NA
     sent1 = NA
     if (fixed_sent == TRUE) {
-
-        #12-07-2022 we decided on 0-4 because that's approx the width of test sentinel bands
         sent2 = tibble::tibble(rating1 = 0, rating2 = seq(0, 4, length.out = n_sentinel)) %>%
             dplyr::arrange(-rating2)
         sent1 = tibble::tibble(rating1 = seq(0, 4, length.out = n_sentinel), rating2 = 0)
 
     } else {
-
         sent2 = tibble::tibble(rating1 = 0, rating2 = seq(0, max(dat$rating2), length.out = n_sentinel)) %>%
             dplyr::arrange(-rating2)
         sent1 = tibble::tibble(rating1 = seq(0, max(dat$rating1), length.out = n_sentinel), rating2 = 0)
@@ -40,14 +35,15 @@ make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE) {
 }
 
 
-#' Calculate weights of the sentinels.
+#' Sentinel weights
 #'
+#' Calculate weights of the sentinels.
 #' Here we fit a multivariate normal and then do weights as density
 #' given the assumed multivariate normal.
 #'
-#' @param x location of sentinels, sentinels$rating1
-#' @param y location of sentinels, sentinels$rating2
-#' @param data data to be analyzed
+#' @param x The location of sentinels, sentinels$rating1.
+#' @param y The location of sentinels, sentinels$rating2.
+#' @param data The data to be analyzed.
 calc_weights <- function(x, y, data) {
 
     mu1 = mean( data$rating1, )
@@ -66,16 +62,17 @@ calc_weights <- function(x, y, data) {
 
 
 
-#' Fit gaussian process and use it to predict for each (x,y) pair
-#' passed.
+#' Gaussian process predictions
 #'
-#' @param sentinels Dataframe holding rating1,rating2, which are the
-#' @param data data to be analyzed, passed
-#' @param method What type of GP to call, passed
-#' @param startnum Parameter to gaussian process estimator
-#' @param endnum Parameter to gaussian process estimator
-#' @param prefix used in Sigma column names
-#'   x,y locations of the sentinels.
+#' Innermost function - runs the laGP model to fit gaussian process
+#' and uses it to predict for each (x,y) pair of sentinels.
+#'
+#' @param sentinels Data frame holding the sentinels.
+#' @param data The data to be analyzed, passed.
+#' @param method What type of GP to call, passed.
+#' @param startnum Parameter to Gaussian process estimator.
+#' @param endnum Parameter to Gaussian process estimator.
+#' @param prefix Used in Sigma column names.
 calc_one_point_GP <- function( sentinels, data,
                                method = c( "new", "aGP", "laGP" ),
                                startnum = NULL, endnum = NULL,
@@ -87,17 +84,15 @@ calc_one_point_GP <- function( sentinels, data,
 
     x = sentinels$rating1
     y = sentinels$rating2
+    XX = data.frame(x, y)
 
-    X = dplyr::select(data,rating1,rating2) #data is dat.gp by treatment status
+    X = dplyr::select(data,rating1,rating2)
 
-    XX = data.frame(x, y) #sentinels
-    #safe_aGP <- safely(aGP, otherwise=NA)
 
     GPmodel = NA
     Sigma = NULL
     if ( method == "new" ) {
-        # This actually fits a GP rather than doing an approximation
-
+        # This fits a GP rather than doing an approximation
         da <- laGP::darg(NULL, X)
         ga <- laGP::garg(list(mle=TRUE), data$Y)
 
@@ -114,17 +109,13 @@ calc_one_point_GP <- function( sentinels, data,
         GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
 
     } else if ( method == "aGP" ) {
-        # This is "Localized Approximate GP Regression For Many
-        # Predictive Locations"
-        # -- meaning what.
-        #
-        # One consequence: This one does not have the Sigma matrix
-        # returned.
+        # This is "Localized Approximate GP Regression For Many Predictive Locations"
+        # One consequence: This one does not have the Sigma matrix returned.
 
         GPmodel <- laGP::aGP(X, data$Y, XX, method="nn", verb = 0 )
         #defaults: start = 6, end = 50, d = NULL, g = 1/10000
         GPmodel$se = sqrt(GPmodel$var)
-        #GPmodel$se = GPmodel$sd/sqrt(length(GPmodel$var))
+
     } else if ( method == "laGP" ) {
         # This is "Localized Approximate GP Prediction At a Single Input Location"
         stopifnot( !is.null( startnum ) )
@@ -134,6 +125,7 @@ calc_one_point_GP <- function( sentinels, data,
                         lite=FALSE, d=NULL, g=NULL) #g default, d default
         Sigma = GPmodel$Sigma
         GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
+
     } else {
         stop( glue::glue( "unrecognized GP method {method}") )
     }
@@ -159,19 +151,18 @@ calc_one_point_GP <- function( sentinels, data,
 #' Calculate the treatment curve along the given sentinels.
 #'
 #' This function fits the GP twice, once for each dataset.
+#' Middle function - divides data into Treated & Control before Gaussian process prediction.
 #'
-#' Middle function - divides data into Treated & Control before laGP prediction
-#'
-#' @param sentinels df of sentinels
-#' @param data data to be analyzed, passed
-#' @param method What type of GP to call, passed
-#' @param startnum Parameter to gaussian process estimator
-#' @param endnum Parameter to gaussian process estimator
+#' @param sentinels Data frame of the sentinels.
+#' @param data Data to be analyzed, passed.
+#' @param method What type of GP to call, passed.
+#' @param startnum Parameter to Gaussian process estimator.
+#' @param endnum Parameter to Gaussian process estimator.
 calc_tx_curve <- function(sentinels, data, method, startnum, endnum) {
 
-    T.c <- Yhat1 <- Yhat0 <- se0 <- se1 <- sentNum <- rating1 <- rating2 <- estimate <- se <- weight <- weight_p <- NULL
+    T <- Yhat1 <- Yhat0 <- se0 <- se1 <- sentNum <- rating1 <- rating2 <- estimate <- se <- weight <- weight_p <- NULL
 
-    datY0 = dplyr::filter(data, T.c == 0)
+    datY0 = dplyr::filter(data, T == 0)
     Y0s = calc_one_point_GP(
         sentinels,
         data = datY0,
@@ -179,7 +170,7 @@ calc_tx_curve <- function(sentinels, data, method, startnum, endnum) {
         startnum = startnum, endnum = endnum,
         prefix = "var0.")
 
-    datY1 = dplyr::filter(data, T.c == 1)
+    datY1 = dplyr::filter(data, T == 1)
     Y1s = calc_one_point_GP(
         sentinels,
         data = datY1,
@@ -205,23 +196,24 @@ calc_tx_curve <- function(sentinels, data, method, startnum, endnum) {
 }
 
 
-#' Estimate impacts along boundary given dataset
+#' Use Gaussian process regression
 #'
-#' This method uses a gaussian process regression on the treated and
+#' Given a two-dimensional dataset with two cutpoints, estimate treatment effects
+#' along the boundary.
+#' This method uses a Gaussian process regression on the treated and
 #' control units to estimate a treatment impact along the boundary
 #' defined by having a 0 score in at least one of the two ratings.
-#'
 #' This function will label units as treated or not, based on the
 #' (rating1, rating2) values.
 #'
-#' @param sampdat data to analyze
-#' @param n_sentinel number of sentinels per side
+#' @param sampdat Data to analyze.
+#' @param n_sentinel The number of sentinels per side.
 #' @param method What type of GP to call - newGP, aGP, or laGP (Use
 #'   'new' generally, although it is more time intensive, others are
-#'   approximations)
-#' @param startnum Parameter to gaussian process estimator
-#' @param endnum Parameter to gaussian process estimator
-#' @param fixed_sent fixed sentinel locations between 0-4 on each RV
+#'   approximations).
+#' @param startnum Parameter to Gaussian process estimator.
+#' @param endnum Parameter to Gaussian process estimator.
+#' @param fixed_sent TRUE if user wants to use fixed sentinel locations between 0-4 on each running variable.
 #'
 #' @export
 gaussianp <- function(sampdat, n_sentinel = 20,
@@ -235,15 +227,11 @@ gaussianp <- function(sampdat, n_sentinel = 20,
     #Take the min. rating value (score) from each row
     r.c<-apply(sampdat[,c("rating1","rating2")],1,min)
 
-    # If the min. is below 0, mark as treated
-    # note: this assumes RVs are centered around their respective cut points.
-    T.c<-1*(r.c<0)
-
     ww.gp<-999
     # create dataset with outcome, "treated" (where treated if score<0),
     # what the score was, rating 1, rating 2
     sampdat<-data.frame( Y=sampdat$Y,
-                         T.c,
+                         T=sampdat$T,
                          r.c,
                          rating1=sampdat$rating1,
                          rating2=sampdat$rating2 )
@@ -256,7 +244,7 @@ gaussianp <- function(sampdat, n_sentinel = 20,
 
     sentinels = make_sentinels(sampdat, n_sentinel = n_sentinel, fixed_sent = fixed_sent )
 
-    #1-11-2024 update: Drop sentinels with too little data to estimate
+    #Drop sentinels with too little data to estimate
     sentinels <- sentinels %>%
         dplyr::mutate(weight = calc_weights( sentinels$rating1,
                                       sentinels$rating2,
@@ -269,17 +257,19 @@ gaussianp <- function(sampdat, n_sentinel = 20,
                                 endnum=endnum)
 
     return(results.gp)
-} # end function gaussianp
+}
 
 
 
+#' Drop sentinels with low weight.
+#'
 #' Given a list of sentinels, drop those with very low weight (using
 #' the weight column).  Will drop smallest sentinels in order up to
 #' the drop proportion, but never exceed that threshold in total mass
 #' dropped.
 #'
-#' @param GP_res Gaussian process regression result to be passed in
-#' @param drop_prop proportion of weight that
+#' @param GP_res Gaussian process regression result to be passed in.
+#' @param drop_prop Proportion of weight under which we drop the sentinel.
 #'
 #' @export
 drop_low_weight_sentinels <- function( GP_res, drop_prop = 0.01 ) {
@@ -298,11 +288,13 @@ drop_low_weight_sentinels <- function( GP_res, drop_prop = 0.01 ) {
 }
 
 
-#' Pull the covariance matrix of the sentinals out of the GP result
+#' Retrieve sentinels' covariance matrix
+#'
+#' Pull the covariance matrix of the sentinels out of the GP result
 #' object (treatment or control side)
 #'
-#' @param GP_res Gaussian process regression result to be passed in
-#' @param tx treated = 1, control = 0, needed to identify Sigmas
+#' @param GP_res Gaussian process regression result to be passed in.
+#' @param tx Needed to identify Sigmas: treated = 1, control = 0.
 get_cov_matrix_side <- function( GP_res, tx = NULL ) {
 
     pfx = "var."
@@ -325,10 +317,11 @@ get_cov_matrix_side <- function( GP_res, tx = NULL ) {
 }
 
 
-#' See maxime's paper for this formula (Equation 6)
-#' This is Sigma_b|Y
+#' Add covariance matrices
 #'
-#' @param GP_res Gaussian process regression result to be passed in
+#' This is Sigma_b|Y (Equation 6 in Rischard et al. (2021).
+#'
+#' @param GP_res Gaussian process regression result to be passed in.
 get_cov_matrix_tx <- function( GP_res ) {
     Sigma_1 = get_cov_matrix_side( GP_res, tx = 1 )
     Sigma_0 = get_cov_matrix_side( GP_res, tx = 0 )
@@ -339,13 +332,14 @@ get_cov_matrix_tx <- function( GP_res ) {
 
 
 
-
+#' Calculate SEs
+#'
 #' Calculate the standard error for a weighted average of the
 #' sentinels given in the Ys object.
 #'
-#' @param GP_res Gaussian process regression result to be passed in
-#' @param weight vector of weights.
-#' @param tx treated side = 1 control = 0
+#' @param GP_res Gaussian process regression result to be passed in.
+#' @param weight Vector of weights.
+#' @param tx Treated side = 1, control = 0.
 #'
 #' @return Standard error of the average outcome of the sentinels,
 #'   weighted by `weight`
@@ -372,10 +366,12 @@ calc_Ybar_Var <- function( GP_res, tx = 0, weight ) {
 }
 
 
-#' This implements equation 13 from Maxime paper to get sentinal
+#' Precision weights
+#'
+#' This implements equation 13 from Rischard et al. (2021) to get sentinel
 #' weights that correspond to the inverse variance weighting.
 #'
-#' @param GP_res Gaussian process regression result to be passed in
+#' @param GP_res Gaussian process regression result to be passed in.
 calculate_precision_weights <- function( GP_res ) {
 
     Sigma_bY = get_cov_matrix_tx( GP_res )
@@ -393,78 +389,40 @@ calculate_precision_weights <- function( GP_res ) {
 
 
 
-#' This implements equation 13 from Maxime paper, and gives the
-#' inverse variance weighted BATE with associated estimated standard
-#' error.
+
+#' Calculate the BATE SE
 #'
-#' NOTE: The code below does not use this function since it calculates
-#' weights via calculate_precision_weights() and then just uses those
-#' weights as any other weights for the following calculations.
+#' Use calc_Ybar_Var function on both the treated and control sides.
+#' Weight the sentinels on the boundary as given by 'weight'.
 #'
-#' @param GP_res Gaussian process regression result to be passed in
-calculate_precision_BATE <- function( GP_res ) {
-
-    Sigma_bY = get_cov_matrix_tx( GP_res )
-    Sigma_inv = solve( Sigma_bY )
-
-    K = nrow( GP_res )
-    oneK = rep( 1, K )
-
-    wts = as.numeric( oneK %*% Sigma_inv )
-    Z = as.numeric( oneK %*% Sigma_inv %*% oneK )
-    wts = wts / Z
-
-    BATE_hat = wts %*% t(GP_res$estimate)
-
-    # From Maxime paper, this is a consequence of the usual w'Sigma w
-    # formula applied to the precision weighting weights.
-    SE2 = 1 / Z
-
-    tibble::tibble( AFE = BATE_hat,
-            SE = sqrt( SE2 ),
-            n_sent = K )
-
-}
-
-
-
-#' Calculate the Standard Error for the Average Frontier Effect
-#'
-#' Weight the sentinels on the frontier as given by 'weight'.
-#'
-#' @param GP_res Gaussian process regression result to be passed in
-#' @param weight vector of weights
+#' @param GP_res Gaussian process regression result to be passed in.
+#' @param weight Vector of weights.
 calc_AFE_SE <- function( GP_res, weight ) {
-    #Have an SE on the Treatment side, an SE on the Control side
-    #sqrt(SE_treat^2 + SE_control^2)
 
-    SE2_Y0 = calc_Ybar_Var( GP_res, tx = 0, weight )
+      SE2_Y0 = calc_Ybar_Var( GP_res, tx = 0, weight )
     SE2_Y1 = calc_Ybar_Var( GP_res, tx = 1, weight )
     return( sqrt( SE2_Y0 + SE2_Y1 ) )
+
 }
 
 
+#' Calculate BATE
+#'
 #' Average the sentinels to get an overall estimated impact along the
 #' boundary.
 #
 #' Produce two estimates: one uses the sentinel weights.  The other
 #' uses precision weighting by weighting by the inverse of the standard
-#' error (if the variance-covariance of the sentinal estimates is
+#' error (if the variance-covariance of the sentinel estimates is
 #' provided).
 #'
-#' @param GP_res Gaussian process regression result to be passed in
-#' @param calc_SE Will be TRUE for GPR and FALSE for loess
+#' @param GP_res Gaussian process regression result to be passed in.
+#' @param calc_SE Will be TRUE for Gaussian process regression and FALSE for loess.
 #'
 #' @export
 calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
 
     estimate <- weight <- weight_p <- AFE_wt <- AFE_prec <- AFE <- SE <- parameter <- n_sent <- sampsize <- SE_wt <- SE_prec <- NULL
-    #  if (exists("GP_res$error")) {
-
-    # Drop sentinels with too little data to estimate
-    # GP_res <- GP_res %>%
-    #   dplyr::filter(!is.na(sentNum)) %>%
-    #   drop_low_weight_sentinels()
 
     # If precision weighting is not stored, try to generate some on
     # the fly. (This will be for loess, in general.)
@@ -475,7 +433,7 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
         if ( all(smpname %in% colnames(GP_res) ) ) {
             GP_res$weight_p = calculate_precision_weights( GP_res )
         } else {
-            # We don't--must be loess or something.  We can make adhoc
+            # We don't--loess.  We can make adhoc
             # precision weights without taking correlation into
             # account
             GP_res$weight_p = 1 / GP_res$se^2
@@ -484,7 +442,7 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
     }
 
     if ( calc_SE ) {
-        resultskp <- GP_res %>%
+        results <- GP_res %>%
             dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
                               SE_wt = calc_AFE_SE( GP_res, weight ),
                               AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
@@ -493,8 +451,8 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
                               sampsize = NA)  #not going to get a sample size for radii along laGP
 
     } else {
-        # We might want to skip SE calculation
-        resultskp <- GP_res %>%
+        # We might want to skip SE calculation, for example with loess
+        results <- GP_res %>%
             dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
                               SE_wt = NA,
                               AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
@@ -504,7 +462,7 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
 
     }
 
-    results_out <- resultskp %>%
+    results_out <- results %>%
         tidyr::pivot_longer(cols = c(AFE_wt, AFE_prec, SE_wt, SE_prec),
                      names_to = c(".value", "parameter"),
                      names_pattern='(.*)_(.*)' ) %>%

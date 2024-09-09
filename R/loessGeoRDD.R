@@ -4,23 +4,21 @@
 
 
 
+#' Use loess at one point.
+#'
 #' Given a point (x,y) take all data within radius of the point, and then weight
 #' the data in the radius using the triweight function of (1-d^3)^3 (rescaling
 #' d, the distance, to have a max of 1 first).  Note the weight is 1 when d=0,
-#' and 0 when d=1.
-#'
-#' Once weights are computed, fit a quad model with a linear interaction (other
-#' choices are possible here) to the weighted data.  Then predict for our
-#' candidate (x,y) point!
-#'
-#' Don't fit a model if we have fewer than 6 data points (need sufficient
+#' and 0 when d=1. Once weights are computed, fit a quad model with a linear interaction (other
+#' choices are possible here) to the weighted data. Then predict for our
+#' candidate (x,y) point. Don't fit a model if we have fewer than 6 data points (need sufficient
 #' degrees of freedom).
 #'
-#' @param x one side of sentinels
-#' @param y other side of sentinels
-#' @param radius radius size around each point
-#' @param data data to be analyzed
-#' @param min_sample min # of data points within each radius
+#' @param x One side of sentinels.
+#' @param y Other side of sentinels.
+#' @param radius Radius size around each point.
+#' @param data Data to be analyzed.
+#' @param min_sample The minimum number of data points within each radius.
 loess_calc_one_point <- function(x, y, radius, data, min_sample = 8) {
 
   rating1 <- rating2 <- dist2 <- NULL
@@ -53,13 +51,12 @@ loess_calc_one_point <- function(x, y, radius, data, min_sample = 8) {
     }
 
 
-#' loess_calc_point
 #' Run loess_calc_one_point across data
 #'
-#' @param x one side of sentinels
-#' @param y other side of sentinels
-#' @param radius radius size around each point
-#' @param data data to be analyzed
+#' @param x One side of sentinels.
+#' @param y Other side of sentinels.
+#' @param radius Radius size around each point.
+#' @param data Data to be analyzed.
 loess_calc_point <- function(x, y, radius, data) {
 
     rating1 <- rating2 <- NULL
@@ -72,13 +69,15 @@ loess_calc_point <- function(x, y, radius, data) {
 
 
 
+#' Generate loess estimates
+#'
 #' Given data and a list of sentinels, calculate predicted Y0 and Y1, and then
 #' take the difference as the estimated treatment effect at each sentinel
 #'
-#' @param sampdat data to be analyzed
-#' @param radius radius size around each point
-#' @param min_sample min # of data points within each radius
-#' @param n_sentinel number of sentinels per side
+#' @param sampdat Data to be analyzed.
+#' @param radius Radius size around each point (we use half a SD).
+#' @param min_sample Minimum number of data points within each radius.
+#' @param n_sentinel Number of sentinels per side of the boundary.
 #'
 #' @export
 loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20) {
@@ -109,8 +108,8 @@ loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20) {
 
     Ys <- Ys %>%
         dplyr::mutate(estimate = Yhat1 - Yhat0,
-               se = sqrt(se1^2 + se0^2), #NA, #se = (sqrt(1/sum(1/(se)^2)))
-               se_hat = NA, #I don't think we get the covariance matrix from predict.stats::lm
+               se = sqrt(se1^2 + se0^2),
+               se_hat = NA, #We do not get the covariance matrix from predict.stats::lm
                weight = calc_weights( sentinels$rating1, sentinels$rating2, sampdat ),
                pt = paste0(round(rating1, digits = 1), ",", round(rating2, digits = 1)) )
 

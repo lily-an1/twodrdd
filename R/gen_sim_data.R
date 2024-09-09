@@ -1,35 +1,33 @@
-#from Kristin Porter's "gen.2RRDD_2013_0427.R" code shared Feb 2022
-#Modified by Lily An
 
 
-
-#' function gen.2RRDD
+#' Generate fake data
 #'
 #' Generate fake data following general structure of Porter et al. (2017), as
 #' adjusted by An et al. (2024)
 #'
-#' @param n = sample size
-#' @param s = number of samples
-#' @param mu1 = mean of rating 1
-#' @param mu2 = mean of rating 2
-#' @param sigma.r1 = sd of true rating 1
-#' @param sigma.r2 = sd of true rating 2
-#' @param rho.r1r2 = correlation between true ratings
-#' @param cut1.quantile = quantile for cutting rating 1
-#' @param cut2.quantile = quantile for cutting rating 2
-#' @param cut1.value = value for cutting rating 1 (if no quantile
-#'   passed)
-#' @param cut2.value = value for cutting rating 2 (if no quantile
+#' @param n = Sample size.
+#' @param s = Number of samples.
+#' @param mu1 = Mean of running variable 1.
+#' @param mu2 = Mean of running variable 2.
+#' @param sigma.r1 = Standard deviation of true running variable 1.
+#' @param sigma.r2 = Standard deviation of true running variable 2.
+#' @param rho.r1r2 = Correlation between true running variables.
+#' @param cut1.quantile = Quantile for cutting running variable 1.
+#' @param cut2.quantile = Quantile for cutting running variable 2.
+#' @param cut1.value = Value for cutting running variable 1 (if no quantile
 #'   passed).
-#' @param param.Y0 = parameters for fn relating ratings and Y0
-#' @param sigma.noise The sd of error term in surface response model
-#' @param sigma.E The sd of random error in effects (assumed same for
-#'   all params)
-#' @param	data.type = "full" or "observed" (ID, rating1, rating2, T, Y)
-#' @param tx.func treatment function for true impacts
-#' @param seed set seed
+#' @param cut2.value = Value for cutting running variable 2 (if no quantile
+#'   passed).
+#' @param param.Y0 = Parameters for the function relating running variables and Y0.
+#' @param sigma.noise The standard deviation of the error term in surface response model.
+#' @param sigma.E The standard deviation of random error in effects (assumed same for
+#'   all params).
+#' @param	data.type = Either "full" or "observed". Observed contains ID,
+#'   running variable1, running variable2, T, Y).
+#' @param tx.func The treatment function for true impacts,
+#' @param seed Set seed parameter.
 #'
-#' @return: simdat = either full or observed dataset and some
+#' @return: simdat = Either full or observed dataset and some
 #' descriptive info such as parameter values for observed data.
 #'
 #' @import mvtnorm
@@ -59,7 +57,7 @@ gen.2RRDD <- function(n,
   # sample id
   sid <- rep(1:s, each = n)
 
-  # generate 2 ratings as a bivariate normal distribution
+  # generate 2 running variables as a bivariate normal distribution
   cov.r1r2 <- rho.r1r2 * sigma.r1 * sigma.r2
   Sigma = matrix(c(sigma.r1 ^ 2, cov.r1r2, cov.r1r2, sigma.r2 ^ 2), c(2, 2))
   r.true <- MASS::mvrnorm(n * s, mu = c(mu1, mu2), Sigma = Sigma)
@@ -67,7 +65,7 @@ gen.2RRDD <- function(n,
   r2.obs <- r.true[, 2]
 
 
-  # assign treatment based on specified cut-point in the observed ratings
+  # assign treatment based on specified cut-point in the observed running variables
   stopifnot(is.null(cut1.quantile) + is.null(cut1.value) == 1)
   stopifnot(is.null(cut2.quantile) + is.null(cut2.value) == 1)
 
@@ -104,7 +102,7 @@ gen.2RRDD <- function(n,
   T3 <- 1 * (r2pass == 1)
   T <- 1 * (T1 == 1 & T3 == 1)
 
-  # center ratings around cut
+  # center running variables around cut
   r1 <- r1.obs - cut1
   r2 <- r2.obs - cut2
 
@@ -123,8 +121,7 @@ gen.2RRDD <- function(n,
       r1.2 = r1 ^ 2,
       r2.2 = r2 ^ 2
     )
-  # observed ratings and counterfactual:
-  #
+
   # This does a matrix multiply of the design matrix dm (a 6 x n
   # matrix) and the parameter vector param.Y0 (1 x 6)
   Y0 <- apply(sweep(dm, MARGIN = 2, param.Y0, '*'), 1, sum) + stats::rnorm(n, 0, sigma.noise)
@@ -149,8 +146,8 @@ gen.2RRDD <- function(n,
       rating2 = r2,
       r1pass,
       r2pass,
-      cut1, #now 0 bc it's been centered
-      cut2,
+      cut1, # now 0 because it's been centered
+      cut2, # now 0 because it's been centered
       T,
       Y0,
       Y1,
@@ -207,8 +204,6 @@ gen.2RRDD <- function(n,
 
   parameters <- list(effects = effects, observed = observed, rating = rating)
 
-
-  # stuff to be returned
   out <- list( data = simdat,
                parameters = parameters,
                tx.func = tx.func )
@@ -218,16 +213,19 @@ gen.2RRDD <- function(n,
 } #end function gen.2RRDD
 
 
+#' Calculate true effects
+#'
 #' Calculate true effects assuming the running variable distribution
 #' is bivariate normal with passed mean and covariance.
 #' I.e., (r1, r2) ~ MVN( rMean, rSigma )
 #'
-#' @param rating1 running variable 1
-#' @param rating2 running variable 2
-#' @param E.true.T tx.func(r1, r2) + eff.err
-#' @param rMean c( mu1 - cut1.old, mu2 - cut2.old) the old cuts are original cuts
-#' @param rSigma matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2))
-#' @param tx.func treatment function
+#' @param rating1 Running variable 1.
+#' @param rating2 Running variable 2.
+#' @param E.true.T Defined as tx.func(r1, r2) + eff.err.
+#' @param rMean Defined as c( mu1 - cut1.old, mu2 - cut2.old), where the old cuts
+#'   are the original running variable cutoffs.
+#' @param rSigma Defined as matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2)).
+#' @param tx.func The treatment function.
 calc_true_effects <- function( rating1, rating2,
                                E.true.T,
                                rMean, rSigma,
@@ -239,7 +237,7 @@ calc_true_effects <- function( rating1, rating2,
   tau.T.r1pass <-
     mean(E.true.T[rating1 > 0]) # marginal for those passing r1
 
-  # Calculate impacts at frontiers assuming bivariate normal density...
+  # Calculate impacts at frontiers assuming bivariate normal density
 
   # integrate conditional effect * conditional density
   num.integrand.r1 <- function(xx) {
@@ -288,13 +286,16 @@ calc_true_effects <- function( rating1, rating2,
 }
 
 
+#' Calculate weights at sentinels
+#'
 #' Given the true mean and covariance, calculate weights of a passed
 #' sequence of (r1,r2) pairs.
 #'
-#' @param rating1 running variable 1
-#' @param rating2 running variable 2
-#' @param rMean c( mu1 - cut1.old, mu2 - cut2.old) the old cuts are original cuts
-#' @param rSigma matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2))
+#' @param rating1 Running variable 1.
+#' @param rating2 Running variable 2.
+#' @param rMean Defined as c( mu1 - cut1.old, mu2 - cut2.old), where the old cuts
+#'   are the original running variable cutoffs.
+#' @param rSigma Defined as matrix(c(sd(truerating1) ^ 2, cov.r1r2, cov.r1r2, sd(truerating2) ^ 2), c(2, 2)).
 #'
 #' @return List of weights, one for each sentinel.  Sums to 1.
 calc_true_sentinel_weights <- function( rating1, rating2,
@@ -309,18 +310,20 @@ calc_true_sentinel_weights <- function( rating1, rating2,
 
 
 
+#' Create simulation data
+#'
 #' This function generates multiple datasets at once, given the
 #' simulation type, cut scores, sample size.
-#'
 #' Passed parameters allow for changing the data generating process.
+#' Modified from Kristin Porter's code shared Feb 2022 for Porter et al. (2017).
 #'
-#' @param sim ID for the simulation type, following Porter et al.
-#' @param n Number of samples per set
-#' @param s Number of datasets
-#' @param rho correlation between running variables
-#' @param cut1 percentile at which running variable 1's cutoff is
-#' @param cut2 percentile at which running variable 2's cutoff is
-#' @param seed set seed
+#' @param sim ID for the simulation type, following Porter et al. (2017).
+#' @param n Number of samples per set.
+#' @param s Number of datasets.
+#' @param rho Correlation between running variables.
+#' @param cut1 Percentile at which running variable 1's cutoff is.
+#' @param cut2 Percentile at which running variable 2's cutoff is.
+#' @param seed Set seed parameter.
 #'
 #' @export
 gen_dat_sim <- function(sim = 1,
@@ -331,18 +334,18 @@ gen_dat_sim <- function(sim = 1,
                         n = 5000,
                         s = 500) {
 
-  rho.r1r2 <- rho # = correlation between true ratings
+  rho.r1r2 <- rho # = correlation between true running variables
   cut1.quantile <- cut1
-  # = quantile for cutting rating 1
+  # = quantile for cutting running variable 1
   cut2.quantile <- cut2
-  # = quantile for cutting rating 2
+  # = quantile for cutting running variable 2
 
-  mu1 <- 0 # = mean of rating 1
-  mu2 <- 0 #= mean of rating 2
-  sigma.r1 <- 1 #= sd of true rating 1
-  sigma.r2 <- 1 #= sd of true rating 2 (always = ratings)
-  cut1.value <- NULL # = value for cutting rating 1
-  cut2.value <- NULL # = value for cutting rating 2
+  mu1 <- 0 # = mean of running variable 1
+  mu2 <- 0 #= mean of running variable 2
+  sigma.r1 <- 1 #= sd of true running variable 1
+  sigma.r2 <- 1 #= sd of true running variable 2 (always = running variables)
+  cut1.value <- NULL # = value for cutting running variable 1
+  cut2.value <- NULL # = value for cutting running variable 2
   sigma.noise <- 1
   sigma.E <- 0 # = sd of random error in individual impacts
 
