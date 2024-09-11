@@ -12,14 +12,10 @@ test_that( "support functions of gaussianp work", {
   #Take the min. rating value (score) from each row
   r.c<-apply(sampdat[,c("rating1","rating2")],1,min)
 
-  # If the min. is below 0, mark as treated
-  # note: this assumes RVs are centered around their respective cut points.
-  T.c<-1*(r.c<0)
-
   # create dataset with outcome, "treated" (where treated if score<0),
   # what the score was, rating 1, rating 2
   sampdat<-data.frame( Y=sampdat$Y,
-                       T.c,
+                       T=sampdat$T,
                        r.c,
                        rating1=sampdat$rating1,
                        rating2=sampdat$rating2 )
