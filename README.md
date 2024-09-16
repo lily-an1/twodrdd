@@ -28,24 +28,23 @@ res <- analysis(dat$data,
          include_loess = TRUE
          )
 
-res |> dplyr::select( -n ) |>
-  knitr::kable( digits = 2)
+knitr::kable( res, digits = 2)
 ```
 
-| model         | parameter | estimate |   se | n_sent | sampsize |
-|:--------------|:----------|---------:|-----:|-------:|---------:|
-| OLS           | AFE       |    -0.60 | 0.46 |     NA |      700 |
-| bindingscore  | ATE       |     0.42 | 0.19 |     NA |      638 |
-| bindingscore  | ATE       |     0.42 | 0.19 |     NA |      638 |
-| frontier      | ATE       |     0.61 | 0.25 |     NA |      682 |
-| frontier      | ATE1      |    -0.05 | 0.29 |     NA |      682 |
-| frontier      | ATE2      |     1.13 | 0.37 |     NA |      682 |
-| gaussianp     | AFE_wt    |     0.60 | 0.21 |     20 |       NA |
-| gaussianp     | AFE_prec  |     0.59 | 0.19 |     20 |       NA |
-| gaussianp_res | AFE_wt    |     0.63 | 0.21 |     20 |       NA |
-| gaussianp_res | AFE_prec  |     0.61 | 0.19 |     20 |       NA |
-| loess         | AFE_wt    |     1.11 |   NA |     39 |       NA |
-| loess         | AFE_prec  |     0.81 |   NA |     39 |       NA |
+| model         | parameter | estimate |   se | n_sent |   n | sampsize |
+|:--------------|:----------|---------:|-----:|-------:|----:|---------:|
+| OLS           | AFE       |     3.60 | 0.54 |     NA | 700 |      700 |
+| bindingscore  | AFE       |     0.69 | 0.21 |     NA |  NA |      692 |
+| bindingscore  | AFE       |     0.69 | 0.21 |     NA |  NA |      692 |
+| frontier      | AFE       |     0.48 | 0.19 |     NA |  NA |      697 |
+| frontier      | AFE1      |     0.42 | 0.28 |     NA |  NA |      697 |
+| frontier      | AFE2      |     0.57 | 0.24 |     NA |  NA |      697 |
+| gaussianp     | AFE_wt    |     0.36 | 0.21 |     18 | 700 |       NA |
+| gaussianp     | AFE_prec  |     0.44 | 0.19 |     18 | 700 |       NA |
+| gaussianp_res | AFE_wt    |     0.36 | 0.21 |     18 | 700 |       NA |
+| gaussianp_res | AFE_prec  |     0.44 | 0.19 |     18 | 700 |       NA |
+| loess         | AFE_wt    |     0.29 |   NA |     39 | 700 |       NA |
+| loess         | AFE_prec  |     0.50 |   NA |     39 | 700 |       NA |
 
 There are other functions to get more rich descriptions of the analysis.
 See, e.g., `gaussianp()`.
