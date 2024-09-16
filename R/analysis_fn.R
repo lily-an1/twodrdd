@@ -212,6 +212,8 @@ analysis <- function( dat, cut1=0, cut2=0,
                     .id = "model" )
     rs <- tibble::remove_rownames(rs)
 
+    rs <- rs %>%
+      dplyr::distinct()
     rs
 }
 
