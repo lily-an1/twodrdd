@@ -70,6 +70,7 @@ analysis <- function( dat, cut1=0, cut2=0,
         colnames(out_bs) <- c("parameter", "estimate", "se", "sampsize")
         out_bs <- out_bs %>%
             dplyr::filter(parameter=="AFE")
+        out_bs$n = nrow( dat )
     }
 
     ## Frontier
@@ -107,6 +108,7 @@ analysis <- function( dat, cut1=0, cut2=0,
             colnames(out_fr) <- c("parameter", "estimate", "se", "sampsize")
             out_fr <- out_fr %>%
                 dplyr::filter(parameter=="AFE1")
+            out_fr$n = nrow( dat )
 
          } else if ( any( tb[2,] <= 10 ) ) {
             # do RDD on c2 only
@@ -126,6 +128,7 @@ analysis <- function( dat, cut1=0, cut2=0,
             colnames(out_fr) <- c("parameter", "estimate", "se", "sampsize")
             out_fr <- out_fr %>%
                 dplyr::filter(parameter=="AFE2")
+            out_fr$n = nrow( dat )
 
         } else {
             # do RDD on c1 and c2
@@ -158,6 +161,7 @@ analysis <- function( dat, cut1=0, cut2=0,
         out_fr<-data.frame(parameter, both) %>%
             dplyr::distinct()
         colnames(out_fr)<-c("parameter","estimate","se","sampsize")
+        out_fr$n = nrow( dat )
         }
     }
 
