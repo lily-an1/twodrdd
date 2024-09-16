@@ -3,7 +3,6 @@
 #' Code to analyze single dataset of n observations using our list of
 #' estimators. The treated area is the top right quadrant.
 #'
-#' @param min_sample Parameter to loess estimator.
 #' @param cut1 Cutoff value for running variable 1. Centered at 0 in the simulation's data generating processes.
 #' @param cut2 Cutoff value for running variable 2. centered at 0 in the simulation's data generating processes.
 #' @param startnum Parameter to the gaussian process estimator.
@@ -21,7 +20,7 @@
 #'
 #' @export
 analysis <- function( dat, cut1=0, cut2=0,
-                      min_sample=8, n_sentinel = 20,
+                      n_sentinel = 20,
                       startnum=50, endnum=100,
                       include_OLS = TRUE,
                       include_BINDING = FALSE,
