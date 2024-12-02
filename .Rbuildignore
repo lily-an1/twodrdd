@@ -1,4 +1,8 @@
 ^.*\.Rproj$
 ^\.Rproj\.user$
+<<<<<<< HEAD
 ^doc$
 ^Meta$
+=======
+^data-raw$
+>>>>>>> 6b0bde29d9130699b4da882a22b0df16d98f70c1
