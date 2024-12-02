@@ -8,7 +8,6 @@ analysis(
   dat,
   cut1 = 0,
   cut2 = 0,
-  min_sample = 8,
   n_sentinel = 20,
   startnum = 50,
   endnum = 100,
@@ -26,8 +25,6 @@ analysis(
 \item{cut1}{Cutoff value for running variable 1. Centered at 0 in the simulation's data generating processes.}
 
 \item{cut2}{Cutoff value for running variable 2. centered at 0 in the simulation's data generating processes.}
-
-\item{min_sample}{Parameter to loess estimator.}
 
 \item{n_sentinel}{The number of sentinels per side.}
 
