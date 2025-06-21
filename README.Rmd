@@ -37,6 +37,7 @@ This is a basic example which shows you how to fit a 2D RDD model:
 library( twodrdd )
 dat = gen_dat_sim( sim = 5, n = 700, rho = 0.80, s = 1 )
 res <- analysis(dat$data, 
+                n_sentinel = 20,
          include_BINDING = TRUE,
          include_FRONTIER = TRUE,
          include_OLS = TRUE,
