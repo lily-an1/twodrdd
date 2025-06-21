@@ -19,13 +19,16 @@ This is a basic example which shows you how to fit a 2D RDD model:
 ``` r
 library( twodrdd )
 dat = gen_dat_sim( sim = 5, n = 700, rho = 0.80, s = 1 )
-res <- analysis(dat$data, 
+res <- analysis(dat$data,
+         n_sentinel = 20,
          include_BINDING = TRUE,
          include_FRONTIER = TRUE,
          include_OLS = TRUE,
          include_GP = TRUE,
          include_GP_RES = TRUE,
-         include_loess = TRUE
+         include_loess = TRUE,
+         include_PARA_LINEAR = FALSE,
+         include_PARA_QUAD = FALSE
          )
 
 knitr::kable( res, digits = 2)
