@@ -17,21 +17,23 @@ Authors@R:
            role = "aut",
            comment = c(ORCID = "0000-0001-9496-9979")))
 Imports: 
+    car,
     dplyr,
+    estimatr,
+    glue,
+    here,
+    laGP,
+    magrittr,
+    MASS,
+    modelr,
+    mvtnorm,
     purrr,
     rddapp,
-    laGP,
-    MASS,
-    mvtnorm,
-    here,
-    glue,
     stats,
-    car,
-    tidyselect,
-    tidyr,
     stringr,
-    magrittr,
-    tibble
+    tibble,
+    tidyr,
+    tidyselect
 Description: This package allows the user to use nonparametric response surface 
     methods as well as methods using local linear regression to analyze two-
     dimensional regression discontinuity designs. These methods use the rddapp 
@@ -45,6 +47,7 @@ RoxygenNote: 7.3.2
 Suggests: 
     knitr,
     rmarkdown,
+    tidyverse,
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 URL: https://github.com/lily-an1/twodrdd

@@ -78,13 +78,15 @@ loess_calc_point <- function(x, y, radius, data) {
 #' @param radius Radius size around each point (we use half a SD).
 #' @param min_sample Minimum number of data points within each radius.
 #' @param n_sentinel Number of sentinels per side of the boundary.
+#' @param sentinels The sentinels used for prediction, with low-weight sentinels already dropped.
 #'
 #' @export
-loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20) {
+loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20,
+                       sentinels) {
 
     Yhat1 <- Yhat0 <- se1 <- se0 <- rating1 <- rating2 <- NULL
 
-    sentinels <- make_sentinels( sampdat, n_sentinel = n_sentinel )
+    sampdat <- as.data.frame(sampdat)
 
     Y0s = loess_calc_point(
         sentinels$rating1,
@@ -111,7 +113,8 @@ loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20) {
                se = sqrt(se1^2 + se0^2),
                se_hat = NA, #We do not get the covariance matrix from predict.stats::lm
                weight = calc_weights( sentinels$rating1, sentinels$rating2, sampdat ),
-               pt = paste0(round(rating1, digits = 1), ",", round(rating2, digits = 1)) )
+               pt = paste0(round(rating1, digits = 1), ",", round(rating2, digits = 1)),
+               n_sentinel = n_sentinel)
 
     Ys$sentNum = 1:nrow(Ys)
     return(Ys)

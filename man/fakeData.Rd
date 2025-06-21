@@ -6,19 +6,17 @@
 \title{Fake 2D RDD dataset}
 \format{
 A data frame with 1500 rows and 7 variables: \describe{
-\item{\code{V.k}}{double District-level covariate (think standardized district-wide average test score relative to state).}
-\item{\code{X.jk}}{double School-level (think percent on Free/Reduced Price Lunch).}
-\item{\code{C.ijk}}{double Student-level covariate (think baseline measured SES).}
-\item{\code{S.id}}{integer School ID.}
-\item{\code{D.id}}{integer District ID.}
-\item{\code{Yobs}}{double Observed outcome (think test score).)}
-\item{\code{T.x}}{integer Treatment assignment (1 treated, 0 control).} }
+\item{\code{sampleID}}{integer ID number of which run is used. This is helpful in the event of conducting multiple runs in a simulation.}
+\item{\code{rating1}}{double Value of the first running variable, centered around its mean.}
+\item{\code{rating2}}{double Value of the second running variable, centered around its mean.}
+\item{\code{Y}}{double Observed outcome (think test score).)}
+\item{\code{T}}{integer Treatment assignment (1 treated, 0 control).} }
 }
 \usage{
 fakeData
 }
 \description{
-This dataset is a fake dataset for illustrative purposes for the twodrdd package.
+This is a fake dataset for illustrative purposes for the twodrdd package.
 }
 \details{
 These data were generated using the \code{gen_dat_sim()} package.

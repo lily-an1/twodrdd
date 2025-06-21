@@ -228,7 +228,7 @@ gaussianp <- function(sampdat, n_sentinel = 20,
     r.c<-apply(sampdat[,c("rating1","rating2")],1,min)
 
     ww.gp<-999
-    # create dataset with outcome, "treated" (where treated if score<0),
+    # create dataset with outcome, treatment status defined in gen_sim_data.R,
     # what the score was, rating 1, rating 2
     sampdat<-data.frame( Y=sampdat$Y,
                          T=sampdat$T,
@@ -255,6 +255,9 @@ gaussianp <- function(sampdat, n_sentinel = 20,
                                 method = method,
                                 startnum=startnum,
                                 endnum=endnum)
+
+    results.gp <- results.gp %>%
+      dplyr::mutate(n_sentinel = n_sentinel)
 
     return(results.gp)
 }
@@ -426,18 +429,18 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
 
     # If precision weighting is not stored, try to generate some on
     # the fly. (This will be for loess, in general.)
-    if ( is.null( GP_res$weight_p ) ) {
+    if ( !("weight_p" %in% names(GP_res)) ) {
 
         # Make sure we have the variance-covariance matrix
         smpname = paste0( "var1.", GP_res$sentNum )
         if ( all(smpname %in% colnames(GP_res) ) ) {
             GP_res$weight_p = calculate_precision_weights( GP_res )
         } else {
-            # We don't--loess.  We can make adhoc
-            # precision weights without taking correlation into
-            # account
-            GP_res$weight_p = 1 / GP_res$se^2
-            GP_res$weight_p = GP_res$weight_p / sum(GP_res$weight_p, na.rm=TRUE)
+            # We don't--We can make adhoc precision
+            # weights without taking correlation into account
+            GP_res <- GP_res %>%
+            dplyr::mutate(weight_p = 1 / se^2,
+                   weight_p = weight_p / sum(weight_p, na.rm=TRUE) )
         }
     }
 
@@ -448,7 +451,8 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
                               AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
                               SE_prec = calc_AFE_SE( GP_res, weight_p ),
                               n_sent = dplyr::n(),
-                              sampsize = NA)  #not going to get a sample size for radii along laGP
+                              sampsize = NA,
+                              n_sentinel = mean(n_sentinel))
 
     } else {
         # We might want to skip SE calculation, for example with loess
@@ -458,7 +462,8 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
                               AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
                               SE_prec = NA,
                               n_sent = dplyr::n(),
-                              sampsize = NA)  #not going to get a sample size for radii along laGP
+                              sampsize = NA,
+                              n_sentinel = mean(n_sentinel))
 
     }
 

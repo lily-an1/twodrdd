@@ -42,7 +42,9 @@ res <- analysis(dat$data,
          include_OLS = TRUE,
          include_GP = TRUE,
          include_GP_RES = TRUE,
-         include_loess = TRUE
+         include_loess = TRUE,
+         include_PARA_LINEAR = TRUE,
+         include_PARA_QUAD = TRUE
          )
 
 knitr::kable( res, digits = 2)

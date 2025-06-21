@@ -7,7 +7,17 @@ test_that("loess estimator works", {
 
   radius = sd( dat$data$rating1 ) * 0.3
   radius
-  rs <- loess2DRDD( dat$data, radius = radius, n_sentinel = 40 )
+
+  sentinels <- make_sentinels( dat$data, n_sentinel = 40 )
+
+  sentinels <- sentinels %>%
+    dplyr::mutate(weight = calc_weights( sentinels$rating1,
+                                         sentinels$rating2,
+                                         data = dat$data )) %>%
+    drop_low_weight_sentinels()
+
+  rs <- loess2DRDD( dat$data, radius = radius, n_sentinel = 40,
+                    sentinels = sentinels)
 
   expect_true( is.data.frame( rs ) )
 
@@ -23,16 +33,20 @@ test_that("loess estimator works", {
   # Try different bandwidths to see how the lines are shakey or not.
   # This will also make sure we don't crash under different radius
   # selections.
-  Y_r1 = loess2DRDD( dat$data, radius = 1, n_sentinel = 40 )
+  Y_r1 = loess2DRDD( dat$data, radius = 1, n_sentinel = 40 ,
+                     sentinels = sentinels)
   Y_r1$tau.hat.1 = Y_r1$estimate
 
-  Y_r3 = loess2DRDD(dat$data, radius = 3, n_sentinel = 40)
+  Y_r3 = loess2DRDD(dat$data, radius = 3, n_sentinel = 40,
+                    sentinels = sentinels)
   Y_r1$tau.hat.3 = Y_r3$estimate
 
-  Y_r05 = loess2DRDD(dat$data, radius = 0.5, n_sentinel = 40)
+  Y_r05 = loess2DRDD(dat$data, radius = 0.5, n_sentinel = 40,
+                     sentinels = sentinels)
   Y_r1$tau.hat.05 = Y_r05$estimate
 
-  Y_r015 = loess2DRDD(dat$data, radius = 0.15, n_sentinel = 40)
+  Y_r015 = loess2DRDD(dat$data, radius = 0.15, n_sentinel = 40,
+                      sentinels = sentinels)
   Y_r1$tau.hat.015 = Y_r015$estimate
 
   Y_r1$true = dat$tx.func(  rs$rating1, rs$rating2 )
