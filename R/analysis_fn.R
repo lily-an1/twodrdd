@@ -100,6 +100,7 @@ frontier_2DRDD <- function( dat,
 loess_2DRDD <- function( dat,
                          cut1=0, cut2=0,
                          n_sentinel = 20 ) {
+
   #dat is original data, sampdat is the bootstrapped version
   sampdat <- dat %>%
     modelr::bootstrap(50)

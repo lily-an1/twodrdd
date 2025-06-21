@@ -11,75 +11,111 @@
 #' @param startnum Parameter to Gaussian process estimator.
 #' @param endnum Parameter to Gaussian process estimator.
 #' @param prefix Used in Sigma column names.
+#'
+#' @return Data frame with the sentinels and their GP predictions.  If
+#'   variance-covariance available, it will add that in as extra
+#'   columns with prefix `prefix`.
 calc_one_point_GP <- function( sentinels, data,
-                               method = c( "new", "aGP", "laGP" ),
+                               method = c( "new", "aGP", "laGP", "iso" ),
                                startnum = NULL, endnum = NULL,
                                prefix = "var." ) {
 
-    rating1 <- rating2 <- NULL
-    method = match.arg( method )
-    stopifnot( !is.null( data$Y ) )
+  rating1 <- rating2 <- NULL
+  method = match.arg( method )
+  stopifnot( !is.null( data$Y ) )
 
-    x = sentinels$rating1
-    y = sentinels$rating2
-    XX = data.frame(x, y)
+  x = sentinels$rating1
+  y = sentinels$rating2
+  XX = data.frame(x, y)
 
-    X = dplyr::select(data,rating1,rating2)
+  X = dplyr::select(data,rating1,rating2)
 
 
-    GPmodel = NA
-    Sigma = NULL
-    if ( method == "new" ) {
-        # This fits a GP rather than doing an approximation
-        da <- laGP::darg(NULL, X)
-        ga <- laGP::garg(list(mle=TRUE), data$Y)
+  GPmodel = NA
+  Sigma = NULL
+  fit_info = NULL
 
-        gpi <- laGP::newGPsep(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
-        #d = lengthscale, g = nugget
-        mle <- laGP::mleGPsep( gpi, param="both", tmin=c(da$min, ga$min),
-                         tmax=c(da$max, ga$max), ab=c(da$ab, ga$ab), maxit=1000)
+  if ( method == "new" ) {
+    # This fits the actual GP rather than doing an approximation
+    # (more computationally expensive).
+    da <- laGP::darg(NULL, X)
+    ga <- laGP::garg(list(mle=TRUE), data$Y)
 
-        GPmodel <- laGP::predGPsep(gpi, XX, lite = FALSE, nonug = TRUE)
+    gpi <- laGP::newGPsep(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
+    #d = lengthscale, g = nugget
+    mle <- laGP::mleGPsep( gpi, param="both",
+                           tmin=c(da$min, ga$min),
+                           tmax=c(da$max, ga$max),
+                           ab=c(da$ab, ga$ab),
+                           maxit=1000 )
 
-        laGP::deleteGPsep(gpi)
+    GPmodel <- laGP::predGPsep(gpi, XX, lite = FALSE, nonug = TRUE)
 
-        Sigma = GPmodel$Sigma
-        GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
+    laGP::deleteGPsep(gpi)
 
-    } else if ( method == "aGP" ) {
-        # This is "Localized Approximate GP Regression For Many Predictive Locations"
-        # One consequence: This one does not have the Sigma matrix returned.
+    Sigma = GPmodel$Sigma
+    GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
+    fit_info = mle
 
-        GPmodel <- laGP::aGP(X, data$Y, XX, method="nn", verb = 0 )
-        #defaults: start = 6, end = 50, d = NULL, g = 1/10000
-        GPmodel$se = sqrt(GPmodel$var)
+  } else if ( method == "iso" ) {
 
-    } else if ( method == "laGP" ) {
-        # This is "Localized Approximate GP Prediction At a Single Input Location"
-        stopifnot( !is.null( startnum ) )
-        stopifnot( !is.null( endnum ) )
+    da <- darg(NULL, X)
+    ga <- garg(list(mle=TRUE), data$Y)
 
-        GPmodel <- laGP::laGP(XX, start=startnum, end=endnum, X, Z=data$Y, method="nn",
-                        lite=FALSE, d=NULL, g=NULL) #g default, d default
-        Sigma = GPmodel$Sigma
-        GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
+    gpi <- newGP(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
+    #d = lengthscale, g = nugget
+    # mle <- mleGP( gpi, param=c("d","g"), tmin=c(da$min, ga$min),
+    #                  tmax=c(da$max, ga$max), ab=c(da$ab, ga$ab))
+    jmle <- jmleGP(gpi, c(da$min, da$max), c(ga$min, ga$max), da$ab, ga$ab)
 
-    } else {
-        stop( glue::glue( "unrecognized GP method {method}") )
-    }
+    GPmodel <- predGP(gpi, XX, lite = FALSE, nonug = TRUE)
 
-    output <- data.frame(sentNum = sentinels$sentNum,
-                         rating1 = x,
-                         rating2 = y,
-                         Yhat = GPmodel$mean,
-                         se = GPmodel$se )
+    deleteGP(gpi)
 
-    if ( !is.null( Sigma ) ) {
-        colnames(Sigma) = paste0(prefix, sentinels$sentNum)
-        output <- dplyr::bind_cols( output, Sigma )
-    }
+    Sigma = GPmodel$Sigma
+    GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
+    GPmodel$da1 = jmle$d
+    GPmodel$da2 = NA
+    fit_info = jmle
 
-    return(output)
+  } else if ( method == "aGP" ) {
+    # This is "Localized Approximate GP Regression For Many Predictive Locations"
+    # One consequence: This one does not have the Sigma matrix returned.
+
+    GPmodel <- laGP::aGP(X, data$Y, XX, method="nn", verb = 0 )
+    #defaults: start = 6, end = 50, d = NULL, g = 1/10000
+    GPmodel$se = sqrt(GPmodel$var)
+
+  } else if ( method == "laGP" ) {
+    # This is "Localized Approximate GP Prediction At a Single Input Location"
+    stopifnot( !is.null( startnum ) )
+    stopifnot( !is.null( endnum ) )
+
+    GPmodel <- laGP::laGP(XX, start=startnum, end=endnum, X, Z=data$Y, method="nn",
+                          lite=FALSE, d=NULL, g=NULL) #g default, d default
+    Sigma = GPmodel$Sigma
+    GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
+
+  } else {
+    stop( glue::glue( "unrecognized GP method {method}") )
+  }
+
+  output <- data.frame(sentNum = sentinels$sentNum,
+                       rating1 = x,
+                       rating2 = y,
+                       Yhat = GPmodel$mean,
+                       se = GPmodel$se )
+
+  if ( !is.null( Sigma ) ) {
+    colnames(Sigma) = paste0(prefix, sentinels$sentNum)
+    output <- dplyr::bind_cols( output, Sigma )
+  }
+
+  if ( !is.null( fit_info ) ) {
+    attr( output, "fit_info" ) <- fit_info
+  }
+
+  return(output)
 }
 
 
@@ -98,39 +134,43 @@ calc_one_point_GP <- function( sentinels, data,
 #' @param endnum Parameter to Gaussian process estimator.
 calc_tx_curve <- function(sentinels, data, method, startnum, endnum) {
 
-    T <- Yhat1 <- Yhat0 <- se0 <- se1 <- sentNum <- rating1 <- rating2 <- estimate <- se <- weight <- weight_p <- NULL
+  T <- Yhat1 <- Yhat0 <- se0 <- se1 <- sentNum <- rating1 <- rating2 <- estimate <- se <- weight <- weight_p <- NULL
 
-    datY0 = dplyr::filter(data, T == 0)
-    Y0s = calc_one_point_GP(
-        sentinels,
-        data = datY0,
-        method = method,
-        startnum = startnum, endnum = endnum,
-        prefix = "var0.")
+  datY0 = dplyr::filter(data, T == 0)
+  Y0s = calc_one_point_GP(
+    sentinels,
+    data = datY0,
+    method = method,
+    startnum = startnum, endnum = endnum,
+    prefix = "var0.")
 
-    datY1 = dplyr::filter(data, T == 1)
-    Y1s = calc_one_point_GP(
-        sentinels,
-        data = datY1,
-        method = method,
-        startnum = startnum, endnum = endnum,
-        prefix = "var1.")
+  datY1 = dplyr::filter(data, T == 1)
+  Y1s = calc_one_point_GP(
+    sentinels,
+    data = datY1,
+    method = method,
+    startnum = startnum, endnum = endnum,
+    prefix = "var1.")
 
-    results = dplyr::inner_join(Y0s,
-                         Y1s,
-                         by = c("sentNum", "rating1", "rating2"),
-                         suffix = c("0", "1"))  %>%
-        dplyr::mutate( estimate=Yhat1-Yhat0,
-                se = sqrt(se0^2 + se1^2) )
+  results = dplyr::inner_join(Y0s,
+                              Y1s,
+                              by = c("sentNum", "rating1", "rating2"),
+                              suffix = c("0", "1"))  %>%
+    dplyr::mutate( estimate=Yhat1-Yhat0,
+                   se = sqrt(se0^2 + se1^2) )
 
-    results$weight_p = calculate_precision_weights(results)
+  results$weight_p = calculate_precision_weights(results)
 
-    results <- results %>%
-        dplyr::mutate(weight = sentinels$weight) %>%
-        dplyr::relocate( sentNum, rating1, rating2, Yhat0, se0, Yhat1, se1,
-                  estimate, se, weight, weight_p )
+  results <- results %>%
+    dplyr::mutate(weight = sentinels$weight) %>%
+    dplyr::relocate( sentNum, rating1, rating2, Yhat0, se0, Yhat1, se1,
+                     estimate, se, weight, weight_p )
 
-    return(results)
+  fit1 = attr( Y0s, "fit_info" )
+  fit2 = attr( Y1s, "fit_info" )
+  attr( results, "fit_info" ) <- list( fit1 = fit1, fit2 = fit2 )
+
+  return(results)
 }
 
 
@@ -163,52 +203,88 @@ gaussianp <- function(sampdat, n_sentinel = 20,
     M = stats::lm( Y ~ rating1 + rating2, data=sampdat )
 
     sampdat <- dplyr::mutate( sampdat,
-                      Y_old = Y,
-                      Y = resid( M ) )
+                              Y_old = Y,
+                              Y = resid( M ) )
   }
 
-    method = match.arg( method )
+  method = match.arg( method )
 
-    stopifnot( is.data.frame(sampdat) )
+  stopifnot( is.data.frame(sampdat) )
 
-    #Take the min. rating value (score) from each row
-    r.c<-apply(sampdat[,c("rating1","rating2")],1,min)
+  #Take the min. rating value (score) from each row
+  r.c<-apply(sampdat[,c("rating1","rating2")], 1, min)
 
-    ww.gp<-999
-    # create dataset with outcome, treatment status defined in gen_sim_data.R,
-    # what the score was, rating 1, rating 2
-    sampdat<-data.frame( Y=sampdat$Y,
-                         T=sampdat$T,
-                         r.c,
-                         rating1=sampdat$rating1,
-                         rating2=sampdat$rating2 )
+  ww.gp<-999
+  # create dataset with outcome, treatment status defined in gen_sim_data.R,
+  # what the score was, rating 1, rating 2
+  sampdat<-data.frame( Y=sampdat$Y,
+                       T=sampdat$T,
+                       r.c,
+                       rating1=sampdat$rating1,
+                       rating2=sampdat$rating2 )
 
-    n = nrow(sampdat)
-    sampdat<-sampdat[r.c>-ww.gp & r.c<ww.gp,] #remove very large ratings
-    if ( nrow(sampdat) < n ) {
-        warning( "Some observations dropped due to extreme rating values." )
-    }
+  n = nrow(sampdat)
+  sampdat<-sampdat[r.c>-ww.gp & r.c<ww.gp,] #remove very large ratings
+  if ( nrow(sampdat) < n ) {
+    warning( "Some observations dropped due to extreme rating values." )
+  }
 
-    sentinels = make_sentinels(sampdat, n_sentinel = n_sentinel, fixed_sent = fixed_sent )
+  sentinels = make_sentinels(sampdat, n_sentinel = n_sentinel,
+                             fixed_sent = fixed_sent )
 
-    #Drop sentinels with too little data to estimate
-    sentinels <- sentinels %>%
-        dplyr::mutate(weight = calc_weights( sentinels$rating1,
-                                      sentinels$rating2,
-                                      data = sampdat )) %>%
-        drop_low_weight_sentinels()
+  #Drop sentinels with too little data to estimate
+  sentinels <- sentinels %>%
+    dplyr::mutate(weight = calc_weights( sentinels$rating1,
+                                         sentinels$rating2,
+                                         data = sampdat )) %>%
+    drop_low_weight_sentinels()
 
-    results.gp <- calc_tx_curve(sentinels, data = sampdat,
-                                method = method,
-                                startnum=startnum,
-                                endnum=endnum)
+  results.gp <- calc_tx_curve(sentinels, data = sampdat,
+                              method = method,
+                              startnum=startnum,
+                              endnum=endnum)
 
-    results.gp <- results.gp %>%
-      dplyr::mutate(n_sentinel = n_sentinel)
+  results.gp <- results.gp %>%
+    dplyr::mutate(n_sentinel = n_sentinel)
 
-    return(results.gp)
+  return(results.gp)
 }
 
+
+#' Return ML parameters of the GP model
+#'
+#' This function extracts the parameters of the Gaussian process,
+#' given the result from gaussianp
+#'
+#' @param gp_res Result from gaussianp.
+#' @export
+params <- function( gp_res ) {
+
+  inner_params <- function( a ) {
+    tibble(
+      length1 = a$theta[1],
+      length2 = a$theta[2],
+      nugget = a$theta[3],
+      its = a$its,
+      conv = a$conv,
+      msg = a$msg
+    )
+  }
+
+  # Get the parameters of the GP model
+  a = attr( gp_res, "fit_info" )
+  if ( is.null( a ) ) {
+    return( NULL )
+  }
+
+  if ( "fit1" %in% names( a ) ) {
+    bind_rows( Co=inner_params(a$fit1),
+               Tx=inner_params(a$fit2),
+               .id="group" )
+  } else {
+    inner_params( a )
+  }
+}
 
 
 #' Retrieve sentinels' covariance matrix
@@ -220,23 +296,23 @@ gaussianp <- function(sampdat, n_sentinel = 20,
 #' @param tx Needed to identify Sigmas: treated = 1, control = 0.
 get_cov_matrix_side <- function( GP_res, tx = NULL ) {
 
-    pfx = "var."
-    if ( !is.null( tx ) ) {
-        pfx = paste0( "var", tx, "." )
-    }
+  pfx = "var."
+  if ( !is.null( tx ) ) {
+    pfx = paste0( "var", tx, "." )
+  }
 
-    # Get the covariance matrix of all the sentinels left in GP_res.
-    # (We might have columns of covariances with sentinels we have dropped.)
-    keep_sent = GP_res$sentNum
-    var_name = paste0( pfx, keep_sent )
-    Sigma <- GP_res %>%
-        dplyr::select( tidyselect::all_of( var_name ) ) %>%
-        as.matrix()
+  # Get the covariance matrix of all the sentinels left in GP_res.
+  # (We might have columns of covariances with sentinels we have dropped.)
+  keep_sent = GP_res$sentNum
+  var_name = paste0( pfx, keep_sent )
+  Sigma <- GP_res %>%
+    dplyr::select( tidyselect::all_of( var_name ) ) %>%
+    as.matrix()
 
-    stopifnot( isSymmetric( unname( Sigma ) ) )
-    stopifnot( nrow(Sigma) == ncol(Sigma) )
+  stopifnot( isSymmetric( unname( Sigma ) ) )
+  stopifnot( nrow(Sigma) == ncol(Sigma) )
 
-    Sigma
+  Sigma
 }
 
 
@@ -246,10 +322,10 @@ get_cov_matrix_side <- function( GP_res, tx = NULL ) {
 #'
 #' @param GP_res Gaussian process regression result to be passed in.
 get_cov_matrix_tx <- function( GP_res ) {
-    Sigma_1 = get_cov_matrix_side( GP_res, tx = 1 )
-    Sigma_0 = get_cov_matrix_side( GP_res, tx = 0 )
+  Sigma_1 = get_cov_matrix_side( GP_res, tx = 1 )
+  Sigma_0 = get_cov_matrix_side( GP_res, tx = 0 )
 
-    Sigma_0 + Sigma_1
+  Sigma_0 + Sigma_1
 }
 
 
@@ -268,24 +344,24 @@ get_cov_matrix_tx <- function( GP_res ) {
 #'   weighted by `weight`
 calc_Ybar_Var <- function( GP_res, tx = 0, weight ) {
 
-    stopifnot( nrow( GP_res ) == length( weight ) )
+  stopifnot( nrow( GP_res ) == length( weight ) )
 
-    # Get the covariance matrix of all the sentinels left in GP_res.
-    # (We might have columns of covariances with sentinels we have dropped.)
-    keep_sent = GP_res$sentNum
-    var_name = paste0( "var", tx, ".", keep_sent )
-    Sigma <- GP_res %>%
-        dplyr::select( tidyselect::all_of( var_name ) ) %>%
-        as.matrix()
+  # Get the covariance matrix of all the sentinels left in GP_res.
+  # (We might have columns of covariances with sentinels we have dropped.)
+  keep_sent = GP_res$sentNum
+  var_name = paste0( "var", tx, ".", keep_sent )
+  Sigma <- GP_res %>%
+    dplyr::select( tidyselect::all_of( var_name ) ) %>%
+    as.matrix()
 
-    stopifnot( isSymmetric( unname( Sigma ) ) )
-    stopifnot( nrow(Sigma) == ncol(Sigma) )
+  stopifnot( isSymmetric( unname( Sigma ) ) )
+  stopifnot( nrow(Sigma) == ncol(Sigma) )
 
-    SE2 = as.numeric( t(weight) %*% Sigma %*% weight )
+  SE2 = as.numeric( t(weight) %*% Sigma %*% weight )
 
-    stopifnot( length(SE2) == 1 )
+  stopifnot( length(SE2) == 1 )
 
-    return( SE2 )
+  return( SE2 )
 }
 
 
@@ -297,17 +373,17 @@ calc_Ybar_Var <- function( GP_res, tx = 0, weight ) {
 #' @param GP_res Gaussian process regression result to be passed in.
 calculate_precision_weights <- function( GP_res ) {
 
-    Sigma_bY = get_cov_matrix_tx( GP_res )
-    Sigma_inv = solve( Sigma_bY )
+  Sigma_bY = get_cov_matrix_tx( GP_res )
+  Sigma_inv = solve( Sigma_bY )
 
-    K = nrow( GP_res )
-    oneK = rep( 1, K )
+  K = nrow( GP_res )
+  oneK = rep( 1, K )
 
-    wts = as.numeric( oneK %*% Sigma_inv )
-    Z = as.numeric( oneK %*% Sigma_inv %*% oneK )
-    wts = wts / Z
+  wts = as.numeric( oneK %*% Sigma_inv )
+  Z = as.numeric( oneK %*% Sigma_inv %*% oneK )
+  wts = wts / Z
 
-    wts
+  wts
 }
 
 
@@ -322,9 +398,9 @@ calculate_precision_weights <- function( GP_res ) {
 #' @param weight Vector of weights.
 calc_AFE_SE <- function( GP_res, weight ) {
 
-      SE2_Y0 = calc_Ybar_Var( GP_res, tx = 0, weight )
-    SE2_Y1 = calc_Ybar_Var( GP_res, tx = 1, weight )
-    return( sqrt( SE2_Y0 + SE2_Y1 ) )
+  SE2_Y0 = calc_Ybar_Var( GP_res, tx = 0, weight )
+  SE2_Y1 = calc_Ybar_Var( GP_res, tx = 1, weight )
+  return( sqrt( SE2_Y0 + SE2_Y1 ) )
 
 }
 
@@ -345,63 +421,63 @@ calc_AFE_SE <- function( GP_res, weight ) {
 #' @export
 calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
 
-    estimate <- weight <- weight_p <- AFE_wt <- AFE_prec <- AFE <- SE <- parameter <- n_sent <- sampsize <- SE_wt <- SE_prec <- NULL
+  estimate <- weight <- weight_p <- AFE_wt <- AFE_prec <- AFE <- SE <- parameter <- n_sent <- sampsize <- SE_wt <- SE_prec <- NULL
 
-    # If precision weighting is not stored, try to generate some on
-    # the fly. (This will be for loess, in general.)
-    if ( !("weight_p" %in% names(GP_res)) ) {
+  # If precision weighting is not stored, try to generate some on
+  # the fly. (This will be for loess, in general.)
+  if ( !("weight_p" %in% names(GP_res)) ) {
 
-        # Make sure we have the variance-covariance matrix
-        smpname = paste0( "var1.", GP_res$sentNum )
-        if ( all(smpname %in% colnames(GP_res) ) ) {
-            GP_res$weight_p = calculate_precision_weights( GP_res )
-        } else {
-            # We don't--We can make adhoc precision
-            # weights without taking correlation into account
-            GP_res <- GP_res %>%
-            dplyr::mutate(weight_p = 1 / se^2,
-                   weight_p = weight_p / sum(weight_p, na.rm=TRUE) )
-        }
-    }
-
-    if ( calc_SE ) {
-        results <- GP_res %>%
-            dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
-                              SE_wt = calc_AFE_SE( GP_res, weight ),
-                              AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
-                              SE_prec = calc_AFE_SE( GP_res, weight_p ),
-                              n_sent = dplyr::n(),
-                              sampsize = NA,
-                              n_sentinel = mean(n_sentinel))
-
+    # Make sure we have the variance-covariance matrix
+    smpname = paste0( "var1.", GP_res$sentNum )
+    if ( all(smpname %in% colnames(GP_res) ) ) {
+      GP_res$weight_p = calculate_precision_weights( GP_res )
     } else {
-        # We might want to skip SE calculation, for example with loess
-        results <- GP_res %>%
-            dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
-                              SE_wt = NA,
-                              AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
-                              SE_prec = NA,
-                              n_sent = dplyr::n(),
-                              sampsize = NA,
-                              n_sentinel = mean(n_sentinel))
-
+      # We don't--We can make adhoc precision
+      # weights without taking correlation into account
+      GP_res <- GP_res %>%
+        dplyr::mutate(weight_p = 1 / se^2,
+                      weight_p = weight_p / sum(weight_p, na.rm=TRUE) )
     }
+  }
 
-    results_out <- results %>%
-        tidyr::pivot_longer(cols = c(AFE_wt, AFE_prec, SE_wt, SE_prec),
-                     names_to = c(".value", "parameter"),
-                     names_pattern='(.*)_(.*)' ) %>%
-        dplyr::rename(estimate=AFE,
-               se=SE) %>%
-        dplyr::mutate(parameter= stringr::str_replace(parameter,"wt","AFE_wt"),
-               parameter= stringr::str_replace(parameter,"prec", "AFE_prec"))
+  if ( calc_SE ) {
+    results <- GP_res %>%
+      dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
+                        SE_wt = calc_AFE_SE( GP_res, weight ),
+                        AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
+                        SE_prec = calc_AFE_SE( GP_res, weight_p ),
+                        n_sent = dplyr::n(),
+                        sampsize = NA,
+                        n_sentinel = mean(n_sentinel))
 
-    if ( !calc_SE ) {
-        results_out$se = NA
-    }
+  } else {
+    # We might want to skip SE calculation, for example with loess
+    results <- GP_res %>%
+      dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
+                        SE_wt = NA,
+                        AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
+                        SE_prec = NA,
+                        n_sent = dplyr::n(),
+                        sampsize = NA,
+                        n_sentinel = mean(n_sentinel))
 
-    results_out %>%
-        dplyr::relocate( n_sent, sampsize, .after = tidyselect::last_col() )
+  }
+
+  results_out <- results %>%
+    tidyr::pivot_longer(cols = c(AFE_wt, AFE_prec, SE_wt, SE_prec),
+                        names_to = c(".value", "parameter"),
+                        names_pattern='(.*)_(.*)' ) %>%
+    dplyr::rename(estimate=AFE,
+                  se=SE) %>%
+    dplyr::mutate(parameter= stringr::str_replace(parameter,"wt","AFE_wt"),
+                  parameter= stringr::str_replace(parameter,"prec", "AFE_prec"))
+
+  if ( !calc_SE ) {
+    results_out$se = NA
+  }
+
+  results_out %>%
+    dplyr::relocate( n_sent, sampsize, .after = tidyselect::last_col() )
 }
 
 

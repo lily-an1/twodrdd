@@ -7,7 +7,7 @@
 calc_one_point_GP(
   sentinels,
   data,
-  method = c("new", "aGP", "laGP"),
+  method = c("new", "aGP", "laGP", "iso"),
   startnum = NULL,
   endnum = NULL,
   prefix = "var."
@@ -25,6 +25,11 @@ calc_one_point_GP(
 \item{endnum}{Parameter to Gaussian process estimator.}
 
 \item{prefix}{Used in Sigma column names.}
+}
+\value{
+Data frame with the sentinels and their GP predictions.  If
+variance-covariance available, it will add that in as extra
+columns with prefix \code{prefix}.
 }
 \description{
 Innermost function - runs the laGP model to fit gaussian process

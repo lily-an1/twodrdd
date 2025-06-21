@@ -7,9 +7,15 @@
 #'
 #' @param dat Data to be analyzed.
 #' @param n_sentinel The number of sentinels per side.
-#' @param fixed_sent TRUE if user wants fixed sentinel locations between 0-4
-#'  (approx the width of test sentinel bands in the simulation) on each running variable.
-make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE) {
+#' @param add_weights Add density weights to the sentinels.
+#' @param fixed_sent TRUE if user wants fixed sentinel locations
+#'   between 0-max_sent (approx the width of test sentinel bands in the
+#'   simulation) on each running variable.
+#'
+make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE,
+                            add_weights = FALSE,
+                            max_sent = c( 4, 4 ),
+                            ... ) {
 
   rating2 <- NULL
 
@@ -18,19 +24,33 @@ make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE) {
   sent2 = NA
   sent1 = NA
   if (fixed_sent == TRUE) {
-    sent2 = tibble::tibble(rating1 = 0, rating2 = seq(0, 4, length.out = n_sentinel)) %>%
+    sent2 = tibble::tibble(rating1 = 0,
+                           rating2 = seq(0, max_sent[[1]],
+                                         length.out = n_sentinel)) %>%
       dplyr::arrange(-rating2)
-    sent1 = tibble::tibble(rating1 = seq(0, 4, length.out = n_sentinel), rating2 = 0)
+    sent1 = tibble::tibble(rating1 = seq(0, max_sent[[2]],
+                                         length.out = n_sentinel),
+                           rating2 = 0)
 
   } else {
-    sent2 = tibble::tibble(rating1 = 0, rating2 = seq(0, max(dat$rating2), length.out = n_sentinel)) %>%
+    sent2 = tibble::tibble(rating1 = 0,
+                           rating2 = seq(0, max(dat$rating2),
+                                         length.out = n_sentinel)) %>%
       dplyr::arrange(-rating2)
-    sent1 = tibble::tibble(rating1 = seq(0, max(dat$rating1), length.out = n_sentinel), rating2 = 0)
+    sent1 = tibble::tibble(rating1 = seq(0, max(dat$rating1),
+                                         length.out = n_sentinel),
+                           rating2 = 0)
 
   }
+
+
   sentinels = dplyr::bind_rows(sent2, sent1[-c(1), ])
   sentinels$sentNum = 1:nrow(sentinels)
 
+  if ( add_weights ) {
+    sentinels$weight = calc_weights( sentinels$rating1, sentinels$rating2,
+                                     data = dat, ... )
+  }
   sentinels
 }
 
@@ -53,24 +73,38 @@ calc_weights <- function(x, y, data, method = c( "mvnorm", "kernel" ) ) {
     kde <- MASS::kde2d(data$rating1, data$rating2, n = 100)
 
     # Interpolate density values at (x, y)
-    dens_vals <- fields::interp.surface(kde, cbind(x, y))
-
-    dens_vals / sum(dens_vals)
+    wts <- fields::interp.surface(kde, cbind(x, y))
 
   } else {
 
-  mu1 = mean( data$rating1, )
-  mu2 = mean( data$rating2 )
-  v1 = stats::var( data$rating1 )
-  v2 = stats::var( data$rating2 )
-  cov12 = stats::cov( data$rating1, data$rating2 )
+    mu1 = mean( data$rating1, )
+    mu2 = mean( data$rating2 )
+    v1 = stats::var( data$rating1 )
+    v2 = stats::var( data$rating2 )
+    cov12 = stats::cov( data$rating1, data$rating2 )
 
-  wts = mvtnorm::dmvnorm( cbind( x, y ),
-                          mean = c(mu1, mu2),
-                          sigma = matrix( c( v1, cov12, cov12, v2 ), nrow=2 ) )
+    wts = mvtnorm::dmvnorm( cbind( x, y ),
+                            mean = c(mu1, mu2),
+                            sigma = matrix( c( v1, cov12, cov12, v2 ), nrow=2 ) )
 
-  wts / sum(wts)
   }
+
+
+  # Scale weights to take into account the spacing of the sentinels
+  # along each edge. We are assuming the sentinels are equally spaced
+  # along the edges, but possibly spaced differently for the different
+  # edges.
+  dR1 = y[[1]] - y[[2]]
+  stopifnot( all.equal( dR1, y[[2]] - y[[3]], tolerance = 1e-6 ) )
+  n = length(x)
+  dR2 = x[[n]] - x[[n-1]]
+  stopifnot( all.equal( dR2, x[[n-1]] - x[[n-2]], tolerance = 1e-6 ) )
+
+  wts[ y == 0 ] = wts[ y == 0 ] * dR2
+  wts[ x == 0 ] = wts[ x == 0 ] * dR1
+  wts[ x == 0 & y == 0 ] = wts[ x == 0 & y == 0 ] * (dR1+dR2)/( 2 * dR1*dR2 )
+
+  wts <- wts / sum(wts)
 }
 
 
