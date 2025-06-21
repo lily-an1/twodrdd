@@ -16,7 +16,9 @@ analysis(
   include_FRONTIER = FALSE,
   include_GP = FALSE,
   include_GP_RES = FALSE,
-  include_loess = FALSE
+  include_loess = FALSE,
+  include_PARA_LINEAR = FALSE,
+  include_PARA_QUAD = FALSE
 )
 }
 \arguments{
@@ -45,6 +47,10 @@ each running variable boundary.}
 \item{include_GP_RES}{TRUE to include residualized Gaussian process regression.}
 
 \item{include_loess}{TRUE to include loess.}
+
+\item{include_PARA_LINEAR}{TRUE to include parametric linear surface response.}
+
+\item{include_PARA_QUAD}{TRUE to include parametric quadratic surface response.}
 }
 \description{
 Code to analyze single dataset of n observations using our list of

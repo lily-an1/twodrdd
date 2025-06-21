@@ -17,7 +17,10 @@
 #' @param include_GP TRUE to include Gaussian process regression.
 #' @param include_GP_RES TRUE to include residualized Gaussian process regression.
 #' @param include_loess TRUE to include loess.
+#' @param include_PARA_LINEAR TRUE to include parametric linear surface response.
+#' @param include_PARA_QUAD TRUE to include parametric quadratic surface response.
 #'
+#' @importFrom stats sd weighted.mean
 #' @export
 analysis <- function( dat, cut1=0, cut2=0,
                       n_sentinel = 20,
@@ -27,15 +30,15 @@ analysis <- function( dat, cut1=0, cut2=0,
                       include_FRONTIER = FALSE,
                       include_GP = FALSE,
                       include_GP_RES = FALSE,
-                      include_loess = FALSE ) {
+                      include_loess = FALSE,
+                      include_PARA_LINEAR = FALSE,
+                      include_PARA_QUAD = FALSE) {
 
     Y <- NULL
 
     # Center running variables around their cutpoints
     dat$rating1 <- dat$rating1 - cut1
     dat$rating2 <- dat$rating2 - cut2
-
-    out_fr = tibble::tibble()
 
     ## OLS
     out_ols = tibble::tibble()
@@ -74,6 +77,7 @@ analysis <- function( dat, cut1=0, cut2=0,
     }
 
     ## Frontier
+    out_fr = tibble::tibble()
     if ( include_FRONTIER ) {
 
         dat$c1 = dat$rating1 > cut1
@@ -199,12 +203,214 @@ analysis <- function( dat, cut1=0, cut2=0,
     ### Loess approach
     out_loess = tibble::tibble()
     if ( include_loess ) {
-        out_loess <- loess2DRDD(sampdat = dat,
-                                radius = mean(sd(dat$rating2), sd(dat$rating1))/2,
-                                n_sentinel = n_sentinel )
-        out_loess = calculate_average_impact( out_loess, calc_SE=FALSE )
-        out_loess$n = nrow(dat)
+      #dat is original data, sampdat is the bootstrapped version
+      sampdat <-
+        dat %>%
+        modelr::bootstrap(50)
+
+      sentinels <- make_sentinels( dat, n_sentinel = n_sentinel )
+
+      sentinels <- sentinels %>%
+        dplyr::mutate(weight = calc_weights( sentinels$rating1,
+                                      sentinels$rating2,
+                                      data = dat )) %>%
+        drop_low_weight_sentinels()
+
+      suppressWarnings(out_loess <- purrr::map(sampdat$strap, ~ loess2DRDD(.x,
+                                                   radius=mean(sd(dat$rating2), sd(dat$rating1))/2,
+                                                   min_sample=min_sample,
+                                                   n_sentinel=n_sentinel,
+                                                   sentinels=sentinels)))
+      out_loess <- dplyr::bind_rows(out_loess, .id = "bootstrap_sample_id")
+
+      out_loess <- out_loess %>%
+        dplyr::group_by(bootstrap_sample_id) %>%
+        calculate_average_impact(calc_SE=FALSE) %>%
+        dplyr::ungroup() %>%
+        dplyr::group_by(parameter) %>%
+        dplyr::summarize(n_sentinel = mean(n_sentinel),
+                  se = stats::sd(estimate, na.rm=T),
+                  estimate = mean(estimate, na.rm=T),
+                  n_sent_used = NA,
+                  sampsize = NA)
+
+      out_loess$n = nrow(dat)
+
     }
+
+    ## Parametric surface response: linear
+    out_paraL = tibble::tibble()
+    if (include_PARA_LINEAR) {
+
+      sentinels <- make_sentinels( dat, n_sentinel = n_sentinel )
+      df <- data.frame(rating1=sentinels$rating1, rating2=sentinels$rating2)
+
+      #Build the model matrix (for predictions, ensures proper variable ordering):
+      mm <- stats::model.matrix(~ rating1 + rating2 + rating1:rating2, data=df)
+
+      dat_0 <- dplyr::filter(dat, T==0)
+      dat_1 <- dplyr::filter(dat, T==1)
+
+      M0 = estimatr::lm_robust(Y ~ rating1 + rating2 + rating1:rating2, data = dat_0)
+      M1 = estimatr::lm_robust(Y ~ rating1 + rating2 + rating1:rating2, data = dat_1)
+
+      #Get estimated coefficients:
+      b0 <- stats::coef(M0)
+      b1 <- stats::coef(M1)
+
+      #Get predictions for each sentinel point:
+      Yhat0 <- as.vector(mm %*% b0)  # Control model
+      Yhat1 <- as.vector(mm %*% b1)  # Treated model
+      tau_hat <- Yhat1 - Yhat0       # RD effect at each sentinel
+
+      #Extract coefficient covariance matrices:
+      vcov0 <- stats::vcov(M0)
+      vcov1 <- stats::vcov(M1)
+
+      #vector containing the prediction variance at each sentinel point.
+      var0 <- apply(mm, 1, function(x) as.numeric(t(x) %*% vcov0 %*% x))
+      var1 <- apply(mm, 1, function(x) as.numeric(t(x) %*% vcov1 %*% x))
+      # Variance of treatment effect estimate at each sentinel
+      var_tau <- var0 + var1
+
+      #The full covariance matrix of the predictions at all sentinels:
+      Sig0 <- mm %*% vcov0 %*% t(mm)
+      Sig1 <- mm %*% vcov1 %*% t(mm)
+      # Sig0 and Sig1 are (num_sentinels x num_sentinels)
+
+      # Standard errors
+      se0 <- sqrt(var0)
+      se1 <- sqrt(var1)
+      se_tau <- sqrt(var_tau)
+
+      #Add to Ys data frame:
+      Ys <- data.frame(
+        sentNum = sentinels$sentNum,
+        rating1 = sentinels$rating1,
+        rating2 = sentinels$rating2,
+        Yhat0 = Yhat0,
+        Yhat1 = Yhat1,
+        estimate = tau_hat,
+        se0 = se0,
+        se1 = se1,
+        se = sqrt(se1^2 + se0^2),
+        se_hat = se_tau,
+        weight = calc_weights( sentinels$rating1, sentinels$rating2, dat ),
+        pt = paste0(round(sentinels$rating1, digits = 1), ",", round(sentinels$rating2, digits = 1))
+      )
+
+      # Ad hoc precision weights
+      Ys$weight_p = 1 / Ys$se^2
+      Ys$weight_p = Ys$weight_p / sum(Ys$weight_p, na.rm=TRUE)
+
+      out_paraL <- Ys %>%
+        dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
+                          SE_wt = sqrt(as.numeric(t(weight) %*% Sig0 %*% weight) +
+                                         as.numeric(t(weight) %*% Sig1 %*% weight)),
+                          AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
+                          SE_prec = sqrt(as.numeric(t(weight_p) %*% Sig0 %*% weight_p) +
+                                           as.numeric(t(weight_p) %*% Sig1 %*% weight_p)),
+                          n_sent_used = dplyr::n(),
+                          sampsize = NA,
+                          n_sentinel = mean(n_sentinel))
+
+      out_paraL <- tibble::tibble(
+        parameter = c("AFE_wt",  "AFE_prec"),
+        estimate  = c(out_paraL$AFE_wt, out_paraL$AFE_prec),
+        se = c(out_paraL$SE_wt,  out_paraL$SE_prec),
+        n_sent_used = out_paraL$n_sent_used,
+        sampsize    = out_paraL$sampsize,
+        n_sentinel  = out_paraL$n_sentinel
+      )
+
+    }
+
+    ## Parametric surface response: quad
+    out_paraQ = tibble::tibble()
+    if (include_PARA_QUAD) {
+
+      sentinels <- make_sentinels( dat, n_sentinel = n_sentinel )
+      df <- data.frame(rating1=sentinels$rating1, rating2=sentinels$rating2)
+
+      #Build the model matrix (for predictions, ensures proper variable ordering):
+      mm <- stats::model.matrix(~ rating1 + rating2 + I(rating1^2) + I(rating2^2) + rating1:rating2, data=df)
+
+      dat_0 <- dplyr::filter(dat, T==0)
+      dat_1 <- dplyr::filter(dat, T==1)
+
+      M0 = estimatr::lm_robust(Y ~ rating1 + rating2 + I(rating1^2) + I(rating2^2) + rating1:rating2, data = dat_0)
+      M1 = estimatr::lm_robust(Y ~ rating1 + rating2 + I(rating1^2) + I(rating2^2) + rating1:rating2, data = dat_1)
+
+      #Get estimated coefficients:
+      b0 <- stats::coef(M0)
+      b1 <- stats::coef(M1)
+
+      #Get predictions for each sentinel point:
+      Yhat0 <- as.vector(mm %*% b0)  # Control model
+      Yhat1 <- as.vector(mm %*% b1)  # Treated model
+      tau_hat <- Yhat1 - Yhat0       # RD effect at each sentinel
+
+      #Extract coefficient covariance matrices:
+      vcov0 <- stats::vcov(M0)
+      vcov1 <- stats::vcov(M1)
+
+      #Vector containing the prediction variance at each sentinel point.
+      var0 <- apply(mm, 1, function(x) as.numeric(t(x) %*% vcov0 %*% x))
+      var1 <- apply(mm, 1, function(x) as.numeric(t(x) %*% vcov1 %*% x))
+      # Variance of treatment effect estimate at each sentinel
+      var_tau <- var0 + var1
+
+      #IThe full covariance matrix of the predictions at all sentinels:
+      Sig0 <- mm %*% vcov0 %*% t(mm)
+      Sig1 <- mm %*% vcov1 %*% t(mm)
+      # Sig0 and Sig1 are (num_sentinels x num_sentinels)
+
+      # Standard errors
+      se0 <- sqrt(var0)
+      se1 <- sqrt(var1)
+      se_tau <- sqrt(var_tau)
+
+      #Add to Ys data frame:
+      Ys <- data.frame(
+        sentNum = sentinels$sentNum,
+        rating1 = sentinels$rating1,
+        rating2 = sentinels$rating2,
+        Yhat0 = Yhat0,
+        Yhat1 = Yhat1,
+        estimate = tau_hat,
+        se0 = se0,
+        se1 = se1,
+        se = sqrt(se1^2 + se0^2),
+        se_hat = se_tau,
+        weight = calc_weights( sentinels$rating1, sentinels$rating2, dat ),
+        pt = paste0(round(sentinels$rating1, digits = 1), ",", round(sentinels$rating2, digits = 1))
+      )
+
+      # Ad hoc precision weights
+      Ys$weight_p = 1 / Ys$se^2
+      Ys$weight_p = Ys$weight_p / sum(Ys$weight_p, na.rm=TRUE)
+
+      out_paraQ <- Ys %>%
+        dplyr::summarize( AFE_wt = stats::weighted.mean(estimate, w=weight, na.rm=TRUE),
+                          SE_wt = sqrt(as.numeric(t(weight) %*% Sig0 %*% weight) +
+                                         as.numeric(t(weight) %*% Sig1 %*% weight)),
+                          AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
+                          SE_prec = sqrt(as.numeric(t(weight_p) %*% Sig0 %*% weight_p) +
+                                           as.numeric(t(weight_p) %*% Sig1 %*% weight_p)),
+                          n_sent_used = n(),
+                          sampsize = NA,
+                          n_sentinel = mean(n_sentinel))
+
+      out_paraQ <- tibble::tibble(
+        parameter = c("AFE_wt",  "AFE_prec"),
+        estimate  = c(out_paraQ$AFE_wt, out_paraQ$AFE_prec),
+        se = c(out_paraQ$SE_wt,  out_paraQ$SE_prec),
+        n_sent_used = out_paraQ$n_sent_used,
+        sampsize    = out_paraQ$sampsize,
+        n_sentinel  = out_paraQ$n_sentinel
+      )
+    }
+
 
     # Combine our results
     rs <- dplyr::bind_rows("OLS" = out_ols,
@@ -213,6 +419,8 @@ analysis <- function( dat, cut1=0, cut2=0,
                     "gaussianp" = out_gp,
                     "gaussianp_res" = out_gp_res,
                     "loess" = out_loess,
+                    "surflinear" = out_paraL,
+                    "surfquad" = out_paraQ,
                     .id = "model" )
     rs <- tibble::remove_rownames(rs)
 

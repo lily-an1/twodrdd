@@ -4,7 +4,7 @@
 \alias{loess2DRDD}
 \title{Generate loess estimates}
 \usage{
-loess2DRDD(sampdat, radius, min_sample, n_sentinel = 20)
+loess2DRDD(sampdat, radius, min_sample, n_sentinel = 20, sentinels)
 }
 \arguments{
 \item{sampdat}{Data to be analyzed.}
@@ -14,6 +14,8 @@ loess2DRDD(sampdat, radius, min_sample, n_sentinel = 20)
 \item{min_sample}{Minimum number of data points within each radius.}
 
 \item{n_sentinel}{Number of sentinels per side of the boundary.}
+
+\item{sentinels}{The sentinels used for prediction, with low-weight sentinels already dropped.}
 }
 \description{
 Given data and a list of sentinels, calculate predicted Y0 and Y1, and then

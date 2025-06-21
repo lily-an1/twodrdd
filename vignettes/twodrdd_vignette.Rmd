@@ -19,85 +19,80 @@ knitr::opts_chunk$set(
 library(twodrdd)
 ```
 
-This is a how-to guide to use the twodrdd package.
-
-This package allows users to estimate boundary average treatment effects for two- dimensional regression discontinuity designs (RDDs) where a singular treatment is defined by scores on two running variables. 
-The package follows An et al. (2024)'s implementation of two nonparametric surface response methods (Gaussian process regression and loess), the binding score method, and the pooled frontier method [@wong2013analyzing].
-The paper compares these methods in simulation, akin to the simulation setup in @porter2017estimating. To do so, we rely on the packages rddapp [@rddapp2021] and laGP [@gramacy2016laGP].
-
+The twodrdd package allows users to estimate boundary average treatment effects for two-dimensional regression discontinuity designs (RDDs) where a singular treatment is defined by scores on two running variables. The package implements the following: two nonparametric surface response methods (Gaussian process regression and loess), parametric linear and quadratic surface response methods, the binding score method, and the pooled frontier method [@wong2013analyzing]. twodrdd builds in part on the packages rddapp [@rddapp2021] and laGP [@gramacy2016laGP].
 
 ### Getting started
 
 To use the twodrdd package, ensure you have the following variables in your data:
 
-* T: Treatment variable
-* rating1, cut1: Running variable 1 with corresponding RDD cutoff
-* rating2, cut2: Running variable 2 with corresponding RDD cutoff
-* Y: Outcome variable
+-   T: Treatment variable
+-   rating1: Running variable 1 that has been centered around its cutoff
+-   rating2: Running variable 2 that has been centered around its cutoff
+-   Y: Outcome variable
 
-**IMPORTANT:** This package works for two-dimensional RDD setups where the treated units are defined by both running variables being **greater than or equal to** their cutoffs. Alternatively, the control units could be defined by this definition - if so, then all estimated treatment effects produced by this package will need to be multiplied by -1.
-
-
-### Data example: use your own or follow our data generating process
-
-Provided your data include the above variables, you can load your data.
-Here we show how to use our data generator (that we also use in the simulation of our paper) as an alternative.
-
-This function borrows heavily from the data generating code in @porter2017estimating.
-
-This function will create "s" number of data sets each of size "n" that have two running variables ("rating1" and "rating2") with "rho" correlation between them.
-Note: Do not forget to include where the cutoffs are ("cut1" and "cut2"). These are going to be values from 0-1 that indicates the *percentile* at which the cutoff lies on the running variable.
-We can also set a seed for replicability.
-
-
-We have different options for the type of simulated data to create (distinguished by the parameter "sim"). For specifics, see Table 1 in the paper which discusses sim types of 1-4. A high-level way to think about these types of data is that sim = 1 data are very simple: they have a constant treatment effect and are linear. From sim = 2 to sim = 4 the data get more complex and heterogeneous. We have two other data options in our data generating function: sim = 5 data have an increasing treatment effect along only one running variable, and sim = 6 data have no treatment effect.
+**NOTE:** This package works for two-dimensional RDD setups where the treated units are defined by both running variables being **greater than or equal to** their cutoffs. Alternatively, the control units could be defined by this definition - if so, then all estimated treatment effects produced by this package will need to be multiplied by -1.
 
 ```{r}
-# Let's just use sim = 1 data for our example.
-dat = gen_dat_sim( sim = 1, cut1 = 0.2, cut2 = 0.3, n = 700, rho = 0.80, s = 1 , seed = 847)
+# Using example data
+data(fakeData)
+head(fakeData)
 
-head(dat$data)
+
 ```
 
-### Run two-dimensional RDD analyses
+### 2) Use other methods
 
-We see our data above, and decide we want to try a couple of different RDD methods.
-Our analysis function allows you to pick and choose from several options (see the paper for details):
+### 3) Compare two-dimensional RDD methods: use analysis()
 
-* Gaussian process regression 
-* Residualized Gaussian process regression - our preferred implementation
-* Loess
-* Binding score
-* Pooled frontier 
-* OLS - If you want to run $ Y = rating1 + rating2 + T $. This was mostly a check for us that the function was running properly.
+If you want to try a couple of different RDD methods, our analysis function allows you to pick and choose from several options (see the paper for details):
+
+-   Gaussian process regression
+-   Residualized Gaussian process regression - our preferred implementation
+-   Loess
+-   Parametric linear surface response
+-   Parametric quadratic surface response
+-   Binding score
+-   Pooled frontier
+-   OLS - This fits the simple model \$ Y = rating1 + rating2 + T \$. This was mostly a check for us that the function was running properly.
 
 There are some other parameters to point out:
 
-* cut1 and cut2: These are for running variable cutoffs and are important if you are bringing your own data. The simulation's data generating process centers running variables at 0, so we're going to leave them at 0. However, if you are using the analysis function with your own data, pass the running variable cutoffs as parameters here so that the running variables can be centered before the methods are run.
-* n_sentinel: The number of sentinels (per running variable) you wish to use. We used n_sentinel = 20 in our simulation, which meant 39 sentinels total (since 2 overlap). 
-* startnum and endnum: These are relevant if the Gaussian process regression type used is local approximate (the function laGP). In our simulation we fit new Gaussian processes as opposed to doing an approximation. So we can just leave these untouched.
+-   cut1 and cut2: These are for running variable cutoffs and are important if you are bringing your own data. The simulation's data generating process centers running variables at 0, so we're going to leave them at 0. However, if you are using the analysis function with your own data, pass the running variable cutoffs as parameters here so that the running variables can be centered before the methods are run.
+-   n_sentinel: The number of sentinels (per running variable) you wish to use. We used n_sentinel = 20 in our simulation, which meant 39 sentinels total (since 2 overlap).
+-   startnum and endnum: These are relevant if the Gaussian process regression type used is local approximate (the function laGP), which is faster to fit (but less accurate).
 
-Let's decide we want to see what this residualized Gaussian process regression (include_GP_RES) is all about, and compare it to binding score (include_BINDING).
+We next demonstrate how to compare the binding score, pooled frontier, residualized Gaussian process regression, and loess methods using this package.
 
 ```{r}
-analysis(dat$data, cut1=0, cut2=0,
+#Note: Using cut1 & cut2 of 0 because we already centered the running variables in making fakeData
+analysis(dat = fakeData, cut1=0, cut2=0,
                       n_sentinel = 20,
                       startnum=50, endnum=100,
                       include_OLS = FALSE,
                       include_BINDING = TRUE,
-                      include_FRONTIER = FALSE,
+                      include_FRONTIER = TRUE,
                       include_GP = FALSE,
                       include_GP_RES = TRUE,
-                      include_loess = FALSE)
+                      include_loess = TRUE,
+                      include_PARA_LINEAR = FALSE,
+                      include_PARA_QUAD = FALSE)
 
 
 ```
 
-
-### Conclusion
-
 Our output has spit out the estimates and standard errors from using binding score and residualized Gaussian process regression. The "AFE_wt parameter" refers to density-weighted residualized Gaussian process regression, and "AFE_prec" refers to precision-weighted residualized Gaussian process regression. There are two variables related to sample size in the output: "n" tells us how many units were in the data, and "sampsize" (which is specific to OLS, binding score, and pooled frontier) tells us how many were used.
 
+### 4) Generate your own fake data: use gen_dat_sim()
+
+Here we show how to use our data generator, gen_dat_sim() (that we also use in the simulation of our paper). gen_dat_sim() borrows heavily from the data generating code in @porter2017estimating.
+
+```{r}
+dat = gen_dat_sim( sim = 1, cut1 = 0.2, cut2 = 0.3, n = 700, rho = 0.80, s = 1 , seed = 847)$data
+
+```
+
+This function will create of data sets each of size "n" that have two running variables ("rating1" and "rating2") with "rho" correlation between them. Note: Do not forget to include where the cutoffs are ("cut1" and "cut2"). These are going to be values from 0-1 that indicates the *percentile* at which the cutoff lies on the running variable. We can also set a seed for replicability.
+
+We have different options for the type of simulated data to create (distinguished by the parameter "sim"). For specifics, see Table 1 in the paper which discusses sim types of 1-4. A high-level way to think about these types of data is that sim = 1 data are very simple: they have a constant treatment effect and are linear. From sim = 2 to sim = 4 the data get more complex and heterogeneous. We have two other data options in our data generating function: sim = 5 data have an increasing treatment effect along only one running variable, and sim = 6 data have no treatment effect.
 
 ### References
-
