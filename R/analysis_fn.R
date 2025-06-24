@@ -297,7 +297,7 @@ analysis <- function( dat, cut1=0, cut2=0,
     out_ols = tibble::tibble( parameter = "AFE",
                               estimate = stats::coef(M)["T"],
                               se = stats::coef(Ms)[4,2],
-                              n_sent = NA,
+                              n_sent_used = NA,
                               n = nrow(dat),
                               sampsize = nrow(dat) )
   }
@@ -363,7 +363,9 @@ analysis <- function( dat, cut1=0, cut2=0,
   ### Loess approach ----
   out_loess = tibble::tibble()
   if ( include_loess ) {
-
+    out_loess <- loess_2DRDD( dat,
+                                   cut1 = cut1, cut2 = cut2,
+                                   n_sentinel = n_sentinel )
 
   }
 
