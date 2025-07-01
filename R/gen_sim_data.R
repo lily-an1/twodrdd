@@ -2,8 +2,12 @@
 
 #' Generate fake data
 #'
-#' Generate fake data following general structure of Porter et al. (2017), as
-#' adjusted by An et al. (2024)
+#' Generate fake data following general structure of Porter et al.
+#' (2017), as adjusted by An et al. (2024).
+#'
+#' The control side is a quadratic model of the form:
+#'
+#' Y0 = a + bR1 + cR2 + dR1R2 + eR1^2 + fR2^2 + epsilon
 #'
 #' @param n = Sample size.
 #' @param s = Number of samples.
@@ -14,16 +18,19 @@
 #' @param rho.r1r2 = Correlation between true running variables.
 #' @param cut1.quantile = Quantile for cutting running variable 1.
 #' @param cut2.quantile = Quantile for cutting running variable 2.
-#' @param cut1.value = Value for cutting running variable 1 (if no quantile
-#'   passed).
-#' @param cut2.value = Value for cutting running variable 2 (if no quantile
-#'   passed).
-#' @param param.Y0 = Parameters for the function relating running variables and Y0.
-#' @param sigma.noise The standard deviation of the error term in surface response model.
-#' @param sigma.E The standard deviation of random error in effects (assumed same for
-#'   all params).
-#' @param	data.type = Either "full" or "observed". Observed contains ID,
-#'   running variable1, running variable2, T, Y).
+#' @param cut1.value = Value for cutting running variable 1 (if no
+#'   quantile passed).
+#' @param cut2.value = Value for cutting running variable 2 (if no
+#'   quantile passed).
+#' @param param.Y0 = Parameters for the function relating running
+#'   variables and Y0.  Order is constant, R1, R2, R1R2, R1^2, and
+#'   R2^2 for a quadratic model.
+#' @param sigma.noise The standard deviation of the error term in
+#'   surface response model.
+#' @param sigma.E The standard deviation of random error in effects
+#'   (assumed same for all params).
+#' @param	data.type = Either "full" or "observed". Observed contains
+#'   ID, running variable1, running variable2, T, Y).
 #' @param tx.func The treatment function for true impacts,
 #' @param seed Set seed parameter.
 #'
@@ -241,13 +248,13 @@ calc_true_effects <- function( rating1, rating2,
 
   # integrate conditional effect * conditional density
   num.integrand.r1 <- function(xx) {
-    tx.func(xx, 0) * dmvnorm(cbind(xx, 0),
+    tx.func(xx, 0) * mvtnorm::dmvnorm(cbind(xx, 0),
                              mean = rMean,
                              sigma = rSigma)
   }
   num.r1 <- stats::integrate(num.integrand.r1, lower = 0, upper = Inf)
   num.integrand.r2 <- function(xx) {
-    tx.func(0, xx) * dmvnorm(cbind(0, xx),
+    tx.func(0, xx) * mvtnorm::dmvnorm(cbind(0, xx),
                              mean = rMean,
                              sigma = rSigma)
   }
@@ -255,13 +262,13 @@ calc_true_effects <- function( rating1, rating2,
 
   # integrate conditional density
   den.integrand.r1 <- function(xx) {
-    dmvnorm(cbind(xx, 0),
+    mvtnorm::dmvnorm(cbind(xx, 0),
             mean = rMean,
             sigma = rSigma)
   }
   den.r1 <- stats::integrate(den.integrand.r1, lower = 0, upper = Inf)
   den.integrand.r2 <- function(xx) {
-    dmvnorm(cbind(0, xx),
+    mvtnorm::dmvnorm(cbind(0, xx),
             mean = rMean,
             sigma = rSigma)
   }
@@ -278,8 +285,8 @@ calc_true_effects <- function( rating1, rating2,
   wt.r2 <- den.r1$value / wt.denom
   tau.T.b <- wt.r1 * tau.r1 + wt.r2 * tau.r2
 
-  effects <- c( ATE = tau.T,
-                ATE_r1 = tau.T.r1pass, ATE_r2 = tau.T.r2pass,
+  effects <- c( #ATE = tau.T,
+                #ATE_r1 = tau.T.r1pass, ATE_r2 = tau.T.r2pass,
                 AFE_r1 = tau.r1, AFE_r2 = tau.r2, AFE = tau.T.b,
                 wt.r1 = wt.r1, wt.r2 = wt.r2 )
 
@@ -301,7 +308,7 @@ calc_true_effects <- function( rating1, rating2,
 calc_true_sentinel_weights <- function( rating1, rating2,
                                         rMean, rSigma ) {
 
-  wt = dmvnorm( cbind( rating1, rating2 ),
+  wt = mvtnorm::dmvnorm( cbind( rating1, rating2 ),
                 mean = rMean, sigma = rSigma )
 
   wt = length(wt) * wt / sum(wt)
@@ -381,17 +388,18 @@ gen_dat_sim <- function(sim = 1,
       r1 ^ 2 + pp[[6]] * r2 ^ 2
   }
 
-  # A new simulation where we have an increasing treatment
-  # effect along only one running variable.
+  # A new simulation where we have an increasing treatment effect
+  # along only one running variable, and no treatment along the other
+  # variable.
   if ( sim == 5 ) {
-    param.Y0 <- c(0, 0.5, 1, 0, 2, 1)
+    param.Y0 <- c(0, 0.5, -0.2, -0.2, 1, 0.5)
     tx.func = function( r1, r2 ) {
-      0.2 + r1
+      10*r1
     }
   }
 
   # A simulation that looks like sim 2 but with no treatment effect
-  if (sim ==6 ) {
+  if (sim == 6 ) {
     param.Y0 <- c(0, 0.5, 1, 0, 2, 1)
     tx.func = function( r1, r2 ) {
       0

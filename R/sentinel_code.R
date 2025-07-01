@@ -11,9 +11,11 @@
 #' @param fixed_sent TRUE if user wants fixed sentinel locations
 #'   between 0-max_sent (approx the width of test sentinel bands in the
 #'   simulation) on each running variable.
-#'
+#' @export
 make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE,
                             add_weights = FALSE,
+                            drop_low_weight = FALSE,
+                            drop_prop = 0.01,
                             max_sent = c( 4, 4 ),
                             ... ) {
 
@@ -50,6 +52,10 @@ make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE,
   if ( add_weights ) {
     sentinels$weight = calc_weights( sentinels$rating1, sentinels$rating2,
                                      data = dat, ... )
+
+    if ( drop_low_weight ) {
+      sentinels <- drop_low_weight_sentinels( sentinels, drop_prop = drop_prop )
+    }
   }
   sentinels
 }
@@ -61,10 +67,15 @@ make_sentinels <- function( dat, n_sentinel, fixed_sent = FALSE,
 #' Here we fit a multivariate normal and then do weights as density
 #' given the assumed multivariate normal.
 #'
-#' @param x The location of sentinels, sentinels$rating1.
-#' @param y The location of sentinels, sentinels$rating2.
+#' @param rating1 The location of sentinels, sentinels$rating1.
+#' @param rating2 The location of sentinels, sentinels$rating2.
 #' @param data The data to be analyzed.
-calc_weights <- function(x, y, data, method = c( "mvnorm", "kernel" ) ) {
+#'
+#' @export
+calc_weights <- function(rating1, rating2, data,
+                         method = c( "mvnorm", "kernel" ) ) {
+
+  stopifnot( all( (rating1 == 0) | (rating2 == 0) ) )
 
   method = match.arg( method )
 
@@ -72,18 +83,18 @@ calc_weights <- function(x, y, data, method = c( "mvnorm", "kernel" ) ) {
     # 2D kernel density estimate over rating1 and rating2
     kde <- MASS::kde2d(data$rating1, data$rating2, n = 100)
 
-    # Interpolate density values at (x, y)
-    wts <- fields::interp.surface(kde, cbind(x, y))
+    # Interpolate density values at (rating1, rating2)
+    wts <- fields::interp.surface(kde, cbind(rating1, rating2))
 
   } else {
 
-    mu1 = mean( data$rating1, )
+    mu1 = mean( data$rating1 )
     mu2 = mean( data$rating2 )
     v1 = stats::var( data$rating1 )
     v2 = stats::var( data$rating2 )
     cov12 = stats::cov( data$rating1, data$rating2 )
 
-    wts = mvtnorm::dmvnorm( cbind( x, y ),
+    wts = mvtnorm::dmvnorm( cbind( rating1, rating2 ),
                             mean = c(mu1, mu2),
                             sigma = matrix( c( v1, cov12, cov12, v2 ), nrow=2 ) )
 
@@ -94,15 +105,15 @@ calc_weights <- function(x, y, data, method = c( "mvnorm", "kernel" ) ) {
   # along each edge. We are assuming the sentinels are equally spaced
   # along the edges, but possibly spaced differently for the different
   # edges.
-  dR1 = y[[1]] - y[[2]]
-  stopifnot( all.equal( dR1, y[[2]] - y[[3]], tolerance = 1e-6 ) )
-  n = length(x)
-  dR2 = x[[n]] - x[[n-1]]
-  stopifnot( all.equal( dR2, x[[n-1]] - x[[n-2]], tolerance = 1e-6 ) )
+  dR1 = rating2[[1]] - rating2[[2]]
+  stopifnot( all.equal( dR1, rating2[[2]] - rating2[[3]], tolerance = 1e-6 ) )
+  n = length(rating1)
+  dR2 = rating1[[n]] - rating1[[n-1]]
+  stopifnot( all.equal( dR2, rating1[[n-1]] - rating1[[n-2]], tolerance = 1e-6 ) )
 
-  wts[ y == 0 ] = wts[ y == 0 ] * dR2
-  wts[ x == 0 ] = wts[ x == 0 ] * dR1
-  wts[ x == 0 & y == 0 ] = wts[ x == 0 & y == 0 ] * (dR1+dR2)/( 2 * dR1*dR2 )
+  wts[ rating2 == 0 ] = wts[ rating2 == 0 ] * dR2
+  wts[ rating1 == 0 ] = wts[ rating1 == 0 ] * dR1
+  wts[ rating1 == 0 & rating2 == 0 ] = wts[ rating1 == 0 & rating2 == 0 ] * (dR1+dR2)/( 2 * dR1*dR2 )
 
   wts <- wts / sum(wts)
 }
@@ -136,3 +147,23 @@ drop_low_weight_sentinels <- function( GP_res, drop_prop = 0.01 ) {
 
   dplyr::filter( GP_res, weight > wt_cut )
 }
+
+
+#' Calculate edge weights.
+#'
+#' Given a list of sentinels, calculate the total weight on each edge
+#' and the total weight overall.
+#'
+#' @param sents The sentinels to be analyzed.
+#' @return A tibble with the total weight, and the weight on each edge
+#'
+#' @export
+calc_edge_weight <- function( sents ) {
+  tot <- sum(sents$weight)
+  R2 = sum( sents$weight[ sents$rating1 == 0 ] )
+  R1 = sum( sents$weight[ sents$rating2 == 0 ] )
+
+  tibble( total = tot, R1 = R1, R2 = R2 )
+}
+
+

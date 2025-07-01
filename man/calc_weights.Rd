@@ -4,12 +4,12 @@
 \alias{calc_weights}
 \title{Sentinel weights}
 \usage{
-calc_weights(x, y, data, method = c("mvnorm", "kernel"))
+calc_weights(rating1, rating2, data, method = c("mvnorm", "kernel"))
 }
 \arguments{
-\item{x}{The location of sentinels, sentinels$rating1.}
+\item{rating1}{The location of sentinels, sentinels$rating1.}
 
-\item{y}{The location of sentinels, sentinels$rating2.}
+\item{rating2}{The location of sentinels, sentinels$rating2.}
 
 \item{data}{The data to be analyzed.}
 }

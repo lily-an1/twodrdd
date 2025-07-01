@@ -18,15 +18,18 @@ analysis(
   include_GP_RES = FALSE,
   include_loess = FALSE,
   include_PARA_LINEAR = FALSE,
-  include_PARA_QUAD = FALSE
+  include_PARA_QUAD = FALSE,
+  boot = 50
 )
 }
 \arguments{
 \item{dat}{Data to be analyzed.}
 
-\item{cut1}{Cutoff value for running variable 1. Centered at 0 in the simulation's data generating processes.}
+\item{cut1}{Cutoff value for running variable 1. Centered at 0 in
+the simulation's data generating processes.}
 
-\item{cut2}{Cutoff value for running variable 2. centered at 0 in the simulation's data generating processes.}
+\item{cut2}{Cutoff value for running variable 2. centered at 0 in
+the simulation's data generating processes.}
 
 \item{n_sentinel}{The number of sentinels per side.}
 
@@ -38,19 +41,25 @@ analysis(
 
 \item{include_BINDING}{TRUE to include binding score.}
 
-\item{include_FRONTIER}{TRUE to include pooled frontier.
-The results parameter is labeled the AFE. AFE1 and AFE2 are the effects specific to
-each running variable boundary.}
+\item{include_FRONTIER}{TRUE to include pooled frontier. The
+results parameter is labeled the AFE. AFE1 and AFE2 are the
+effects specific to each running variable boundary.}
 
 \item{include_GP}{TRUE to include Gaussian process regression.}
 
-\item{include_GP_RES}{TRUE to include residualized Gaussian process regression.}
+\item{include_GP_RES}{TRUE to include residualized Gaussian process
+regression.}
 
 \item{include_loess}{TRUE to include loess.}
 
-\item{include_PARA_LINEAR}{TRUE to include parametric linear surface response.}
+\item{include_PARA_LINEAR}{TRUE to include parametric linear
+surface response.}
 
-\item{include_PARA_QUAD}{TRUE to include parametric quadratic surface response.}
+\item{include_PARA_QUAD}{TRUE to include parametric quadratic
+surface response.}
+
+\item{boot}{Number of bootstrap iterations for those methods that
+use bootstrap (such as pooled frontier).}
 }
 \description{
 Code to analyze single dataset of n observations using our list of

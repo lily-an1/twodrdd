@@ -42,6 +42,7 @@ calc_edge_weight <- function( sents ) {
   tibble( total = tot, R1 = R1, R2 = R2 )
 }
 
+calc_edge_weight(sents)
 
 ggplot( dat, aes( rating1, rating2 ) ) +
   geom_point() +

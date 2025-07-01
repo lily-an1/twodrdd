@@ -45,23 +45,26 @@ gen.2RRDD(
 
 \item{cut2.quantile}{= Quantile for cutting running variable 2.}
 
-\item{cut1.value}{= Value for cutting running variable 1 (if no quantile
-passed).}
+\item{cut1.value}{= Value for cutting running variable 1 (if no
+quantile passed).}
 
-\item{cut2.value}{= Value for cutting running variable 2 (if no quantile
-passed).}
+\item{cut2.value}{= Value for cutting running variable 2 (if no
+quantile passed).}
 
-\item{param.Y0}{= Parameters for the function relating running variables and Y0.}
+\item{param.Y0}{= Parameters for the function relating running
+variables and Y0.  Order is constant, R1, R2, R1R2, R1^2, and
+R2^2 for a quadratic model.}
 
 \item{tx.func}{The treatment function for true impacts,}
 
-\item{sigma.E}{The standard deviation of random error in effects (assumed same for
-all params).}
+\item{sigma.E}{The standard deviation of random error in effects
+(assumed same for all params).}
 
-\item{sigma.noise}{The standard deviation of the error term in surface response model.}
+\item{sigma.noise}{The standard deviation of the error term in
+surface response model.}
 
-\item{data.type}{= Either "full" or "observed". Observed contains ID,
-running variable1, running variable2, T, Y).}
+\item{data.type}{= Either "full" or "observed". Observed contains
+ID, running variable1, running variable2, T, Y).}
 
 \item{seed}{Set seed parameter.}
 }
@@ -70,6 +73,11 @@ running variable1, running variable2, T, Y).}
 descriptive info such as parameter values for observed data.
 }
 \description{
-Generate fake data following general structure of Porter et al. (2017), as
-adjusted by An et al. (2024)
+Generate fake data following general structure of Porter et al.
+(2017), as adjusted by An et al. (2024).
+}
+\details{
+The control side is a quadratic model of the form:
+
+Y0 = a + bR1 + cR2 + dR1R2 + eR1^2 + fR2^2 + epsilon
 }

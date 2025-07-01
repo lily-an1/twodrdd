@@ -2,7 +2,8 @@
 
 frontier_2DRDD <- function( dat,
                             cut1=0, cut2=0,
-                            n_sentinel = 20 ) {
+                            n_sentinel = 20,
+                            boot = 50 ) {
 
   dat$c1 = dat$rating1 > cut1
   dat$c2 = dat$rating2 > cut2
@@ -63,7 +64,7 @@ frontier_2DRDD <- function( dat,
     runfun_frontier<-rddapp::mrd_est(data=dat, Y~rating1 + rating2 | rating1 + rating2,
                                      method="front",
                                      cutpoint=c(cut1, cut2),
-                                     t.design=c("l","l"), boot=50)
+                                     t.design=c("l","l"), boot=boot)
 
     ## AFE using optimal bandwidth (bw selected by CV)
     tau.afe <- -1*runfun_frontier[["front"]][["tau_MRD"]][["est"]][2,3]
@@ -252,23 +253,29 @@ parametric_2DRDD <- function( dat,
 #' Code to analyze single dataset of n observations using our list of
 #' estimators. The treated area is the top right quadrant.
 #'
-#' @param cut1 Cutoff value for running variable 1. Centered at 0 in the simulation's data generating processes.
-#' @param cut2 Cutoff value for running variable 2. centered at 0 in the simulation's data generating processes.
+#' @param cut1 Cutoff value for running variable 1. Centered at 0 in
+#'   the simulation's data generating processes.
+#' @param cut2 Cutoff value for running variable 2. centered at 0 in
+#'   the simulation's data generating processes.
 #' @param startnum Parameter to the gaussian process estimator.
 #' @param endnum Parameter to the gaussian process estimator.
 #' @param dat Data to be analyzed.
 #' @param n_sentinel The number of sentinels per side.
 #' @param include_OLS TRUE to include OLS regression.
 #' @param include_BINDING TRUE to include binding score.
-#' @param include_FRONTIER TRUE to include pooled frontier.
-#'  The results parameter is labeled the AFE. AFE1 and AFE2 are the effects specific to
-#'  each running variable boundary.
+#' @param include_FRONTIER TRUE to include pooled frontier. The
+#'   results parameter is labeled the AFE. AFE1 and AFE2 are the
+#'   effects specific to each running variable boundary.
 #' @param include_GP TRUE to include Gaussian process regression.
-#' @param include_GP_RES TRUE to include residualized Gaussian process regression.
+#' @param include_GP_RES TRUE to include residualized Gaussian process
+#'   regression.
 #' @param include_loess TRUE to include loess.
-#' @param include_PARA_LINEAR TRUE to include parametric linear surface response.
-#' @param include_PARA_QUAD TRUE to include parametric quadratic surface response.
-#'
+#' @param include_PARA_LINEAR TRUE to include parametric linear
+#'   surface response.
+#' @param include_PARA_QUAD TRUE to include parametric quadratic
+#'   surface response.
+#' @param boot Number of bootstrap iterations for those methods that
+#'   use bootstrap (such as pooled frontier).
 #' @importFrom stats sd weighted.mean
 #' @export
 analysis <- function( dat, cut1=0, cut2=0,
@@ -281,7 +288,8 @@ analysis <- function( dat, cut1=0, cut2=0,
                       include_GP_RES = FALSE,
                       include_loess = FALSE,
                       include_PARA_LINEAR = FALSE,
-                      include_PARA_QUAD = FALSE) {
+                      include_PARA_QUAD = FALSE,
+                      boot = 50 ) {
 
   Y <- NULL
 
@@ -330,7 +338,8 @@ analysis <- function( dat, cut1=0, cut2=0,
   if ( include_FRONTIER ) {
     out_fr <- frontier_2DRDD( dat,
                               cut1 = cut1, cut2 = cut2,
-                              n_sentinel = n_sentinel )
+                              n_sentinel = n_sentinel,
+                              boot = boot )
   }
 
   ## Gaussian process regression ----

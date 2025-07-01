@@ -4,15 +4,27 @@
 \alias{make_sentinels}
 \title{Make the sentinels.}
 \usage{
-make_sentinels(dat, n_sentinel, fixed_sent = FALSE)
+make_sentinels(
+  dat,
+  n_sentinel,
+  fixed_sent = FALSE,
+  add_weights = FALSE,
+  drop_low_weight = FALSE,
+  drop_prop = 0.01,
+  max_sent = c(4, 4),
+  ...
+)
 }
 \arguments{
 \item{dat}{Data to be analyzed.}
 
 \item{n_sentinel}{The number of sentinels per side.}
 
-\item{fixed_sent}{TRUE if user wants fixed sentinel locations between 0-4
-(approx the width of test sentinel bands in the simulation) on each running variable.}
+\item{fixed_sent}{TRUE if user wants fixed sentinel locations
+between 0-max_sent (approx the width of test sentinel bands in the
+simulation) on each running variable.}
+
+\item{add_weights}{Add density weights to the sentinels.}
 }
 \description{
 Generate a grid of sentinels along the treatment boundary (assumed
