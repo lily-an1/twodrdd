@@ -106,10 +106,13 @@ calc_weights <- function(rating1, rating2, data,
   # along the edges, but possibly spaced differently for the different
   # edges.
   dR1 = rating2[[1]] - rating2[[2]]
-  stopifnot( all.equal( dR1, rating2[[2]] - rating2[[3]], tolerance = 1e-6 ) )
   n = length(rating1)
   dR2 = rating1[[n]] - rating1[[n-1]]
+
+  if (n >= 4) {
+  stopifnot( all.equal( dR1, rating2[[2]] - rating2[[3]], tolerance = 1e-6 ) )
   stopifnot( all.equal( dR2, rating1[[n-1]] - rating1[[n-2]], tolerance = 1e-6 ) )
+  }
 
   wts[ rating2 == 0 ] = wts[ rating2 == 0 ] * dR2
   wts[ rating1 == 0 ] = wts[ rating1 == 0 ] * dR1

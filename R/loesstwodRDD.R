@@ -112,7 +112,7 @@ loess2DRDD <- function(sampdat, radius, min_sample, n_sentinel = 20,
         dplyr::mutate(estimate = Yhat1 - Yhat0,
                se = sqrt(se1^2 + se0^2),
                se_hat = NA, #We do not get the covariance matrix from predict.stats::lm
-               weight = calc_weights( sentinels$rating1, sentinels$rating2, sampdat ),
+               weight = sentinels$weight,
                pt = paste0(round(rating1, digits = 1), ",", round(rating2, digits = 1)),
                n_sentinel = n_sentinel)
 
