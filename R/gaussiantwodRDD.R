@@ -59,24 +59,26 @@ calc_one_point_GP <- function( sentinels, data,
 
   } else if ( method == "iso" ) {
 
-    da <- darg(NULL, X)
-    ga <- garg(list(mle=TRUE), data$Y)
+    da <- laGP::darg(NULL, X)
+    ga <- laGP::garg(list(mle=TRUE), data$Y)
 
-    gpi <- newGP(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
+    gpi <- laGP::newGP(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
     #d = lengthscale, g = nugget
-    # mle <- mleGP( gpi, param=c("d","g"), tmin=c(da$min, ga$min),
+    mle <- laGP::mleGP( gpi, param=c("d","g") )
+    # , tmin=c(da$min, ga$min),
     #                  tmax=c(da$max, ga$max), ab=c(da$ab, ga$ab))
-    jmle <- jmleGP(gpi, c(da$min, da$max), c(ga$min, ga$max), da$ab, ga$ab)
 
-    GPmodel <- predGP(gpi, XX, lite = FALSE, nonug = TRUE)
+    # jmle <- jmleGP(gpi, c(da$min, da$max), c(ga$min, ga$max), da$ab, ga$ab)
 
-    deleteGP(gpi)
+    GPmodel <- laGP::predGP(gpi, XX, lite = FALSE, nonug = TRUE)
+
+    laGP::deleteGP(gpi)
 
     Sigma = GPmodel$Sigma
     GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
-    GPmodel$da1 = jmle$d
+    GPmodel$da1 = mle$d
     GPmodel$da2 = NA
-    fit_info = jmle
+    fit_info = mle
 
   } else if ( method == "aGP" ) {
     # This is "Localized Approximate GP Regression For Many Predictive Locations"
@@ -195,7 +197,7 @@ calc_tx_curve <- function(sentinels, data, method, startnum, endnum) {
 #'
 #' @export
 gaussianp <- function(sampdat, n_sentinel = 20,
-                      method = c( "new", "aGP", "laGP" ),
+                      method = c( "new", "aGP", "laGP", "iso"  ),
                       residualize = FALSE,
                       startnum, endnum, fixed_sent = FALSE) {
 
