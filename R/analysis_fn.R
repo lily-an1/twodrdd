@@ -131,7 +131,7 @@ loess_2DRDD <- function( dat,
     dplyr::summarize(n_sentinel = mean(n_sentinel),
                      se = stats::sd(estimate, na.rm=T),
                      estimate = mean(estimate, na.rm=T),
-                     n_sent_used = NA,
+                     n_sent_used = nrow(sentinels),
                      sampsize = NA)
 
   out_loess$n = nrow(dat)

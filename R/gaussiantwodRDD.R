@@ -239,7 +239,8 @@ gaussianp <- function(sampdat, n_sentinel = 20,
                                          data = sampdat )) %>%
     drop_low_weight_sentinels()
 
-  results.gp <- calc_tx_curve(sentinels, data = sampdat,
+  results.gp <- calc_tx_curve(sentinels = sentinels,
+                              data = sampdat,
                               method = method,
                               startnum=startnum,
                               endnum=endnum)
@@ -421,7 +422,7 @@ calc_AFE_SE <- function( GP_res, weight ) {
 #' @export
 calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
 
-  estimate <- weight <- weight_p <- AFE_wt <- AFE_prec <- AFE <- SE <- parameter <- n_sent <- sampsize <- SE_wt <- SE_prec <- NULL
+  estimate <- weight <- weight_p <- AFE_wt <- AFE_prec <- AFE <- SE <- parameter <- n_sent_used <- sampsize <- SE_wt <- SE_prec <- NULL
 
   # If precision weighting is not stored, try to generate some on
   # the fly. (This will be for loess, in general.)
@@ -446,7 +447,7 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
                         SE_wt = calc_AFE_SE( GP_res, weight ),
                         AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
                         SE_prec = calc_AFE_SE( GP_res, weight_p ),
-                        n_sent = dplyr::n(),
+                        n_sent_used = dplyr::n(),
                         sampsize = NA,
                         n_sentinel = mean(n_sentinel))
 
@@ -457,7 +458,7 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
                         SE_wt = NA,
                         AFE_prec = stats::weighted.mean( estimate, w = weight_p, na.rm=TRUE ),
                         SE_prec = NA,
-                        n_sent = dplyr::n(),
+                        n_sent_used = dplyr::n(),
                         sampsize = NA,
                         n_sentinel = mean(n_sentinel))
 
@@ -477,7 +478,7 @@ calculate_average_impact <- function( GP_res, calc_SE = TRUE ) {
   }
 
   results_out %>%
-    dplyr::relocate( n_sent, sampsize, .after = tidyselect::last_col() )
+    dplyr::relocate( n_sent_used, sampsize, .after = tidyselect::last_col() )
 }
 
 
