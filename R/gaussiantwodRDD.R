@@ -59,37 +59,43 @@ calc_one_point_GP <- function( sentinels, data,
 
   } else if ( method == "iso" ) {
 
-    # Initial values (use your own logic/da/garg if you want)
-    d_init <- 1  # starting value for lengthscale
-    g_init <- 1e-4 # starting value for nugget
+    # --- Initial values and bounds (edit as desired) ---
+    d_init <- 1            # initial lengthscale
+    g_init <- 1e-4         # initial nugget
+    d_lower <- 1e-6        # min allowed d
+    g_lower <- 1e-8        # min allowed g
+    d_upper <- 1e2         # max allowed d (arbitrary)
+    g_upper <- 1           # max allowed g (arbitrary)
 
-    # Create global "separable" GP with all ds equal
-    gpi <- laGP::newGPsep(X, data$Y, d = rep(d_init, ncol(X)), g = g_init, dK = TRUE)
-
-    # -----
-    # Custom joint log-likelihood function: params is c(single_d, g)
+    # --- log-likelihood function: params = c(lengthscale, nugget) ---
     loglik_fun <- function(params) {
       dval <- params[1]
       gval <- params[2]
-      # Bound checks (optional)
-      if (dval <= 0 || gval <= 0) return(-1e20)
-      laGP::updateGPsep(gpi, d = rep(dval, ncol(X)), g = gval)
-      -laGP::llikGPsep(gpi)  # negative loglik for minimization
+      if (dval <= d_lower || gval <= g_lower || dval >= d_upper || gval >= g_upper) return(1e20)
+      gp_try <- laGP::newGPsep(X, Y, d = rep(dval, ncol(X)), g = gval, dK = TRUE)
+      ll <- laGP::llikGPsep(gp_try)
+      laGP::deleteGPsep(gp_try)
+      return(-ll) # minimizer
     }
 
-    # Optimize jointly:
-    res <- optim(par = c(d_init, g_init), fn = loglik_fun,
-                 method = "L-BFGS-B", lower = c(1e-6, 1e-8))
+    # --- Optimization ---
+    res <- optim(par = c(d_init, g_init),
+                 fn = loglik_fun,
+                 method = "L-BFGS-B",
+                 lower = c(d_lower, g_lower),
+                 upper = c(d_upper, g_upper),
+                 control = list(trace = 1, maxit = 50))
+
     d_hat <- res$par[1]
     g_hat <- res$par[2]
+    cat(sprintf("Fitted d = %.4g, g = %.4g\n", d_hat, g_hat))
 
-    # Update the model with MLE params
-    laGP::updateGPsep(gpi, d = rep(d_hat, ncol(X)), g = g_hat)
+    # --- Final model for prediction ---
+    gp_final <- laGP::newGPsep(X, Y, d = rep(d_hat, ncol(X)), g = g_hat, dK = TRUE)
 
-    GPmodel <- laGP::predGPsep(gpi, XX, lite = FALSE)
-    GPmodel$se <- sqrt(GPmodel$var)
+    GPmodel <- laGP::predGPsep(gp_final, XX, lite = FALSE)
 
-    laGP::deleteGPsep(gpi)
+    laGP::deleteGPsep(gp_final)
 
     Sigma = GPmodel$Sigma
     GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
