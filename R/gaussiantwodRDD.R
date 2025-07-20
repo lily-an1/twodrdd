@@ -59,24 +59,43 @@ calc_one_point_GP <- function( sentinels, data,
 
   } else if ( method == "iso" ) {
 
-    da <- laGP::darg(NULL, X)
-    ga <- laGP::garg(list(mle=TRUE), data$Y)
+    # Initial values (use your own logic/da/garg if you want)
+    d_init <- 1  # starting value for lengthscale
+    g_init <- 1e-4 # starting value for nugget
 
-    d_iso <- da$start          # single lengthscale value
-    dvec  <- rep(d_iso, ncol(X))
-    gpi   <- laGP::newGPsep(X, data$Y, d = dvec, g = ga$start, dK = TRUE)
-    mle   <- laGP::mleGPsep(gpi, param = c("d", "g"))
-    # Fix dmin, dmax to same scalar for all dimensions if using optimization (to keep isotropic)
+    # Create global "separable" GP with all ds equal
+    gpi <- laGP::newGPsep(X, data$Y, d = rep(d_init, ncol(X)), g = g_init, dK = TRUE)
 
-    GPmodel <- laGP::predGP(gpi, XX, lite = FALSE, nonug = TRUE)
+    # -----
+    # Custom joint log-likelihood function: params is c(single_d, g)
+    loglik_fun <- function(params) {
+      dval <- params[1]
+      gval <- params[2]
+      # Bound checks (optional)
+      if (dval <= 0 || gval <= 0) return(-1e20)
+      laGP::updateGPsep(gpi, d = rep(dval, ncol(X)), g = gval)
+      -laGP::llikGPsep(gpi)  # negative loglik for minimization
+    }
 
-    laGP::deleteGP(gpi)
+    # Optimize jointly:
+    res <- optim(par = c(d_init, g_init), fn = loglik_fun,
+                 method = "L-BFGS-B", lower = c(1e-6, 1e-8))
+    d_hat <- res$par[1]
+    g_hat <- res$par[2]
+
+    # Update the model with MLE params
+    laGP::updateGPsep(gpi, d = rep(d_hat, ncol(X)), g = g_hat)
+
+    GPmodel <- laGP::predGPsep(gpi, XX, lite = FALSE)
+    GPmodel$se <- sqrt(GPmodel$var)
+
+    laGP::deleteGPsep(gpi)
 
     Sigma = GPmodel$Sigma
     GPmodel$se = sqrt( diag( GPmodel$Sigma ) )
-    GPmodel$da1 = mle$d
+    GPmodel$da1 = d_hat
     GPmodel$da2 = NA
-    fit_info = mle
+
 
   } else if ( method == "aGP" ) {
     # This is "Localized Approximate GP Regression For Many Predictive Locations"
