@@ -62,13 +62,11 @@ calc_one_point_GP <- function( sentinels, data,
     da <- laGP::darg(NULL, X)
     ga <- laGP::garg(list(mle=TRUE), data$Y)
 
-    gpi <- laGP::newGP(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
-    #d = lengthscale, g = nugget
-    mle <- laGP::mleGP( gpi, param=c("d","g") )
-    # , tmin=c(da$min, ga$min),
-    #                  tmax=c(da$max, ga$max), ab=c(da$ab, ga$ab))
-
-    # jmle <- jmleGP(gpi, c(da$min, da$max), c(ga$min, ga$max), da$ab, ga$ab)
+    d_iso <- da$start          # single lengthscale value
+    dvec  <- rep(d_iso, ncol(X))
+    gpi   <- laGP::newGPsep(X, data$Y, d = dvec, g = ga$start, dK = TRUE)
+    mle   <- laGP::mleGPsep(gpi, param = c("d", "g"))
+    # Fix dmin, dmax to same scalar for all dimensions if using optimization (to keep isotropic)
 
     GPmodel <- laGP::predGP(gpi, XX, lite = FALSE, nonug = TRUE)
 
