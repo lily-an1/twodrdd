@@ -7,7 +7,7 @@
 gaussianp(
   sampdat,
   n_sentinel = 20,
-  method = c("new", "aGP", "laGP"),
+  method = c("new", "aGP", "laGP", "iso"),
   residualize = FALSE,
   startnum,
   endnum,

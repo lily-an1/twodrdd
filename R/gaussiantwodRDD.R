@@ -62,7 +62,7 @@ calc_one_point_GP <- function( sentinels, data,
     da <- laGP::darg(NULL, X)
     ga <- laGP::garg(list(mle=TRUE), data$Y)
 
-    gpi <- laGP::newGP(X, data$Y, d=da$start, g=ga$start, dK=TRUE)
+    gpi <- laGP::newGP(X, data$Y, d=da$start, g=ga$start, dK=TRUE, tmax=nrow(X))
     #d = lengthscale, g = nugget
     mle <- laGP::mleGP( gpi, param=c("d","g") )
     # , tmin=c(da$min, ga$min),

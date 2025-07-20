@@ -20,6 +20,7 @@ Imports:
     car,
     dplyr,
     estimatr,
+    fields,
     glue,
     here,
     laGP,
