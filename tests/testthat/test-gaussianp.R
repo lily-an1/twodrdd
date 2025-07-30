@@ -53,7 +53,7 @@ test_that( "support functions of gaussianp work", {
 test_that("gaussianp works", {
 
 
-  dat = gen_dat_sim( sim = 4, n = 700, rho = 0.80, s = 1 )
+  dat = gen_dat_sim( sim = 5, n = 700, rho = 0.80, s = 1 )
   head( dat$data )
   if ( FALSE ) {
     library(tidyverse)
@@ -66,10 +66,7 @@ test_that("gaussianp works", {
 
 
   # takes time to run, but running it on approximate to be faster.
-  rsG_full = gaussianp(dat$data, n_sentinel = 40,
-                       method = "new",
-                       residualize = T,
-                       startnum, endnum, fixed_sent = FALSE)
+  rsG_full = gaussianp(dat$data, n_sentinel = 40)
   expect_true( all( c("sentNum", "rating1", "rating2", "Yhat0", "estimate") %in% colnames(rsG_full) ) )
   expect_true( all( !is.na( rsG_full$var1.37 ) ) )
 
@@ -79,11 +76,8 @@ test_that("gaussianp works", {
   afe
   expect_true( all( afe$estimate > 0 ) )
 
-  dat$data$Y[ dat$data$T== 1] = dat$data$Y[ dat$data$T== 1] - 4
-  rsG_full = gaussianp(dat$data, n_sentinel = 20,
-                       method = "new",
-                       residualize = T,
-                       startnum, endnum, fixed_sent = FALSE)
+  dat$data$Y[ dat$data$T== 1] = dat$data$Y[ dat$data$T== 1] - 3
+  rsG_full = gaussianp(dat$data, n_sentinel = 20)
   expect_true( all( !is.na( rsG_full$var1.13 ) ) )
 
   afe <- calculate_average_impact( rsG_full, calc_SE = TRUE )

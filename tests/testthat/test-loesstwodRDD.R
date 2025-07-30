@@ -3,7 +3,7 @@
 test_that("loess estimator works", {
 
   set.seed(12342)
-  dat = gen_dat_sim( sim = 5, rho = 0.80, s = 1, seed = 12342 )
+  dat = gen_dat_sim( sim = 5, rho = 0.80, s = 1 )
 
   radius = sd( dat$data$rating1 ) * 0.3
   radius
@@ -24,10 +24,9 @@ test_that("loess estimator works", {
   head( rs )
 
   avg <- calculate_average_impact( rs, calc_SE = FALSE )
-  avg
   expect_true( is.data.frame( avg ) )
-  expect_true( all( avg$estimate >= dat$parameters$effects["AFE"] - 0.5 ) )
-  expect_true( all( avg$estimate <= dat$parameters$effects["AFE"] + 0.5 ) )
+  expect_true( all( avg$estimate >= dat$parameters$effects["AFE"] - 0.2 ) )
+  expect_true( all( avg$estimate <= dat$parameters$effects["AFE"] + 0.2 ) )
 
 
 
