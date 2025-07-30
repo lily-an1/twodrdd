@@ -91,7 +91,7 @@ calc_one_point_GP <- function( sentinels, data,
     cat(sprintf("Fitted d = %.4g, g = %.4g\n", d_hat, g_hat))
 
     # --- Final model for prediction ---
-    gp_final <- laGP::newGPsep(X, data$Y, d = rep(d_hat, ncol(X)), g = g_hat, dK = TRUE)
+    gp_final <- laGP::newGPsep(X, dataY, d = rep(d_hat, ncol(X)), g = g_hat, dK = TRUE)
 
     GPmodel <- laGP::predGPsep(gp_final, XX, lite = FALSE)
 
