@@ -72,7 +72,7 @@ calc_one_point_GP <- function( sentinels, data,
       dval <- params[1]
       gval <- params[2]
       if (dval <= d_lower || gval <= g_lower || dval >= d_upper || gval >= g_upper) return(1e20)
-      gp_try <- laGP::newGPsep(X, data$Y, d = rep(dval, ncol(X)), g = gval, dK = TRUE)
+      gp_try <- laGP::newGPsep(X, Y, d = rep(dval, ncol(X)), g = gval, dK = TRUE)
       ll <- laGP::llikGPsep(gp_try)
       laGP::deleteGPsep(gp_try)
       return(-ll) # minimizer
@@ -91,7 +91,7 @@ calc_one_point_GP <- function( sentinels, data,
     cat(sprintf("Fitted d = %.4g, g = %.4g\n", d_hat, g_hat))
 
     # --- Final model for prediction ---
-    gp_final <- laGP::newGPsep(X, dataY, d = rep(d_hat, ncol(X)), g = g_hat, dK = TRUE)
+    gp_final <- laGP::newGPsep(X, Y, d = rep(d_hat, ncol(X)), g = g_hat, dK = TRUE)
 
     GPmodel <- laGP::predGPsep(gp_final, XX, lite = FALSE)
 
